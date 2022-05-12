@@ -24,6 +24,10 @@ find_package(docopt)
 
 # Generic test that uses conan libs
 add_executable(intro main.cpp)
+
+add_subdirectory(DiligentEngine/DiligentCore)
+
+#target_include_directories(intro PRIVATE "../DiligentEngine/DiligentCore")
 target_link_libraries(
   intro
   PRIVATE project_options
@@ -31,3 +35,14 @@ target_link_libraries(
           docopt::docopt
           fmt::fmt
           spdlog::spdlog)
+
+target_compile_definitions(intro PRIVATE ENGINE_DLL=1)
+#target_link_libraries(intro PRIVATE Diligent-BuildSettings)
+
+#if(D3D12_SUPPORTED)
+target_link_libraries(intro PRIVATE Diligent-GraphicsEngineD3D12-shared)
+#endif()
+
+copy_required_dlls(intro)
+
+
