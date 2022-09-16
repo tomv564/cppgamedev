@@ -6,6 +6,8 @@ cmake-build-*/
 # IDE files
 .vs/
 .idea/
+_deps/
+.cache/
 .vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
