@@ -1,5 +1,24 @@
 
+### TODO
 
+Extract shaders
+Immediate-mode rectangle
+With colors
+Immediate-mode text
+
+
+### Tutorial refactor
+
+
+Extracted app class
+
+
+### Fix compile_commands
+
+install mingw-get and install  
+edit .conan/profiles/default to hardwire CC to clang as it fails to autodetect
+cmake -G "MinGW Makefiles" -S . -B mingw4 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+copy compile_commands.json from mingw4 to build
 
 
 ### Add DiligentEngine

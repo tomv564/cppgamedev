@@ -24,9 +24,9 @@ project(myproject LANGUAGES CXX)
 # This overwrites `project_options` and sets `project_warnings`
 # uncomment the options to enable them:
 project_options(
-      ENABLE_CACHE
+      # ENABLE_CACHE
       # WARNINGS_AS_ERRORS
-      ENABLE_CPPCHECK
+      # ENABLE_CPPCHECK
       ENABLE_CLANG_TIDY
       ENABLE_CONAN
       ENABLE_COVERAGE
