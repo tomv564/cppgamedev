@@ -72,6 +72,8 @@ int main(int argc, const char **argv)
     return 0;
   }
 
+  g_pTheApp->BuildUI();
+
   g_pTheApp->CreatePipelineState();
   g_pTheApp->CreateVertexBuffer();
   g_pTheApp->CreateIndexBuffer();

@@ -47,6 +47,8 @@ project_options(
 )
 target_compile_features(project_options INTERFACE cxx_std_17)
 
+add_definitions(-DNOMINMAX)
+
 # Adding the src:
 add_subdirectory(src)
 

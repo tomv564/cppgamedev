@@ -1,6 +1,8 @@
 
+#define NOMINMAX 1
 
 // DiligentEngine needs
+#include <stdint.h>
 #ifndef PLATFORM_WIN32
 #    define PLATFORM_WIN32 1
 #endif
@@ -8,8 +10,6 @@
 #include <stdlib.h>
 #include "GameApp.hpp"
 
-
-#include "DiligentEngine/DiligentCore/Common/interface/BasicMath.hpp";
 
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/Buffer.h"
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/DeviceContext.h"
@@ -23,6 +23,8 @@
 #include <RenderDevice.h>
 #include <DeviceContext.h>
 #include <SwapChain.h>
+
+#include <vector>
 
 
 using namespace Diligent;
@@ -72,6 +74,8 @@ void main(in  PSInput  PSIn,
 )";
 
 
+
+
   
   bool GameApp::InitializeDiligentEngine(HWND hWnd)
   {
@@ -92,7 +96,12 @@ void main(in  PSInput  PSIn,
     
     return true;
   }
+  void GameApp::BuildUI()
+  {
+    m_rects.push_back({ { -0.5, 0.5 }, { 0, 0 } });
+    m_rects.push_back({ { 0, 0 }, { 0.5, -0.5 } });
 
+  }
   void GameApp::CreatePipelineState()
   {
       // Pipeline state object encompasses configuration of all GPU stages
@@ -181,48 +190,66 @@ void main(in  PSInput  PSIn,
       {
         float3 pos;
       };
-
-
-// Pos[0] = float4(-0.5, -0.5, 0.0, 1.0);
-//     Pos[1] = float4( 0.0, +0.5, 0.0, 1.0);
-//     Pos[2] = float4(+0.5, -0.5, 0.0, 1.0);
-
-      Vertex triangleVertices[3] = 
+      
+      std::vector<Vertex> vertices;
+      for (const auto& rect : m_rects)
       {
-        {float3(-0.5, -0.5, 0.0)},
-        {float3(0.0, 0.5, 0.0)},
-        {float3(0.5, -0.5, 0.0)}
-      };
+        // add 4 vertices 
+        vertices.push_back({float3(rect.bottomRight.x, rect.topLeft.y, 0.0)});
+        vertices.push_back({float3(rect.topLeft.x, rect.topLeft.y, 0.0)});
+        vertices.push_back({float3(rect.bottomRight.x, rect.bottomRight.y, 0.0)});
+        vertices.push_back({float3(rect.topLeft.x, rect.bottomRight.y, 0.0)});
+      }
 
+      // TODO: project from screen space here or probably in vertex shader?
+
+
+      Uint64 dataSize  = sizeof(vertices[0]) * vertices.size();
       BufferDesc vertBufferDesc;
       vertBufferDesc.Name = "Triangle vertex buffer";
       vertBufferDesc.Usage = USAGE_IMMUTABLE;
       vertBufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-      vertBufferDesc.Size = sizeof(triangleVertices);
+      vertBufferDesc.Size = dataSize; //sizeof(triangleVertices);
       
       BufferData vertBufferData;  
-      vertBufferData.pData = triangleVertices;
-      vertBufferData.DataSize = sizeof(triangleVertices);
+      vertBufferData.pData = vertices.data();
+      vertBufferData.DataSize = dataSize; //sizeof(triangleVertices);
 
       m_pDevice->CreateBuffer(vertBufferDesc, &vertBufferData, &m_triangleVertexBuffer);
   }
 
   void GameApp::CreateIndexBuffer()
   {
-      Uint32 indices[] = 
+      // Uint32 indices[] = 
+      // {
+      //   0, 1, 3, 0, 2, 3
+      // };
+
+      uint32_t offset = 0;
+      std::vector<Uint32> indices;
+      for (const auto& rect : m_rects)
       {
-        0, 1, 2
-      };
+        // add 6 indices
+        indices.push_back(offset+0);
+        indices.push_back(offset+1);
+        indices.push_back(offset+3);
+        indices.push_back(offset+0);
+        indices.push_back(offset+2);
+        indices.push_back(offset+3);
+        offset += 4;
+      }
+
+      Uint64 dataSize  = sizeof(indices[0]) * indices.size();
 
       BufferDesc indexBufferDesc;
       indexBufferDesc.Name = "Triangle index buffer";
       indexBufferDesc.Usage = USAGE_IMMUTABLE;
       indexBufferDesc.BindFlags = BIND_INDEX_BUFFER;
-      indexBufferDesc.Size = sizeof(indices);
+      indexBufferDesc.Size = dataSize;
 
       BufferData indexBufferData;
-      indexBufferData.pData = indices;
-      indexBufferData.DataSize = sizeof(indices);
+      indexBufferData.pData = indices.data();
+      indexBufferData.DataSize = dataSize;
 
       m_pDevice->CreateBuffer(indexBufferDesc, &indexBufferData, &m_triangleIndexBuffer);
 
@@ -254,7 +281,7 @@ void main(in  PSInput  PSIn,
 
         DrawIndexedAttribs drawAttrs;
         drawAttrs.IndexType = VT_UINT32;
-        drawAttrs.NumIndices = 3; // Render 3 vertices
+        drawAttrs.NumIndices = m_rects.size() * 6; // Render 6 vertices
         drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
         m_pImmediateContext->DrawIndexed(drawAttrs);
   }
