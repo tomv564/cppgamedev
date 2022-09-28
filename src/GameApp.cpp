@@ -11,6 +11,8 @@
 #include "GameApp.hpp"
 
 
+#include "DiligentEngine/DiligentCore/Graphics/GraphicsTools/interface/MapHelper.hpp"
+
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/Buffer.h"
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/DeviceContext.h"
 
@@ -37,6 +39,11 @@ using namespace Diligent;
 
 static const char* VSSource = R"(
 
+cbuffer Constants
+{
+    float4x4 g_WorldViewProj;
+};
+
 struct VSInput
 {
   float3 Pos: ATTRIB0;
@@ -50,7 +57,7 @@ struct PSInput
 void main(in  VSInput VSIn,
           out PSInput PSIn) 
 {
-    PSIn.Pos   = float4(VSIn.Pos, 1.0);
+    PSIn.Pos   = mul(float4(VSIn.Pos, 1.0), g_WorldViewProj);
 }
 )";
 
@@ -98,8 +105,11 @@ void main(in  PSInput  PSIn,
   }
   void GameApp::BuildUI()
   {
-    m_rects.push_back({ { -0.5, 0.5 }, { 0, 0 } });
-    m_rects.push_back({ { 0, 0 }, { 0.5, -0.5 } });
+    // m_rects.push_back({ { -0.5, 0.5 }, { 0, 0 } });
+    // m_rects.push_back({ { 0, 0 }, { 0.5, -0.5 } });
+
+    m_rects.push_back({ { 0, 0 }, { 300, 300 } });
+    m_rects.push_back({ { 300, 300 }, { 600, 600 } });
 
   }
   void GameApp::CreatePipelineState()
@@ -143,6 +153,16 @@ void main(in  PSInput  PSIn,
           ShaderCI.Desc.Name       = "Triangle vertex shader";
           ShaderCI.Source          = VSSource;
           m_pDevice->CreateShader(ShaderCI, &pVS);
+
+          // Create dynamic uniform buffer that will store our transformation matrix
+          // Dynamic buffers can be frequently updated by the CPU
+          BufferDesc constantsBufferDesc;
+          constantsBufferDesc.Name           = "VS constants CB";
+          constantsBufferDesc.Size           = sizeof(float4x4);
+          constantsBufferDesc.Usage          = USAGE_DYNAMIC;
+          constantsBufferDesc.BindFlags      = BIND_UNIFORM_BUFFER;
+          constantsBufferDesc.CPUAccessFlags = CPU_ACCESS_WRITE;
+          m_pDevice->CreateBuffer(constantsBufferDesc, nullptr, &m_vertexShaderConstants);
       }
 
       // Create a pixel shader
@@ -154,15 +174,6 @@ void main(in  PSInput  PSIn,
           ShaderCI.Source          = PSSource;
           m_pDevice->CreateShader(ShaderCI, &pPS);
       }
-
-     /* BufferDesc bufferDesc;
-      bufferDesc.Name = "VS Constants";
-      bufferDesc.Size = sizeof(float4x4);
-      bufferDesc.Usage = USAGE_DYNAMIC;
-      bufferDesc.BindFlags = BIND_UNIFORM_BUFFER;
-      bufferDesc.CPUAccessFlags = CPU_ACCESS_WRITE;
-      m_pDevice->CreateBuffer(bufferDesc);*/
-
 
       // memory layout of input data
       LayoutElement layoutElements[] = 
@@ -181,6 +192,17 @@ void main(in  PSInput  PSIn,
       PSOCreateInfo.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
 
       m_pDevice->CreateGraphicsPipelineState(PSOCreateInfo, &m_pPSO);
+
+      // for now this is identity but we'd like to use screen coordinates to build UI instead - eg based on 1080px height
+      m_worldViewProjectionMatrix = float4x4::OrthoOffCenter(0.0, 1920.0, 1080.0, 0.0, 1.0, -1.0, false); //float4x4::Identity();
+
+      // Since we did not explcitly specify the type for 'Constants' variable, default
+      // type (SHADER_RESOURCE_VARIABLE_TYPE_STATIC) will be used. Static variables never
+      // change and are bound directly through the pipeline state object.
+      m_pPSO->GetStaticVariableByName(SHADER_TYPE_VERTEX, "Constants")->Set(m_vertexShaderConstants);
+
+      // Create a shader resource binding object and bind all static resources in it
+      m_pPSO->CreateShaderResourceBinding(&m_pSRB, true);
 
   }
 
@@ -269,6 +291,12 @@ void main(in  PSInput  PSIn,
         m_pImmediateContext->ClearRenderTarget(pRTV, ClearColor, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
         m_pImmediateContext->ClearDepthStencil(pDSV, CLEAR_DEPTH_FLAG, 1.f, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
+        {
+            // Map the buffer and write current world-view-projection matrix
+            MapHelper<float4x4> CBConstants(m_pImmediateContext, m_vertexShaderConstants, MAP_WRITE, MAP_FLAG_DISCARD);
+            *CBConstants = m_worldViewProjectionMatrix.Transpose();
+        }
+
         const Uint64 offset = 0;
         IBuffer* pBuffs[] = {m_triangleVertexBuffer};
         m_pImmediateContext->SetVertexBuffers(0, 1, pBuffs, &offset, RESOURCE_STATE_TRANSITION_MODE_TRANSITION, SET_VERTEX_BUFFERS_FLAG_RESET);
@@ -276,8 +304,9 @@ void main(in  PSInput  PSIn,
         // Set the pipeline state in the immediate context
         m_pImmediateContext->SetPipelineState(m_pPSO);
 
-        // Typically we should now call CommitShaderResources(), however shaders in this example don't
-        // use any resources.
+        // Commit shader resources. RESOURCE_STATE_TRANSITION_MODE_TRANSITION mode
+        // makes sure that resources are transitioned to required states.
+        m_pImmediateContext->CommitShaderResources(m_pSRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
         DrawIndexedAttribs drawAttrs;
         drawAttrs.IndexType = VT_UINT32;

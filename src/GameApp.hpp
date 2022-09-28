@@ -55,10 +55,10 @@ public:
   RefCntAutoPtr<IDeviceContext> m_pImmediateContext;
   RefCntAutoPtr<ISwapChain> m_pSwapChain;
   RefCntAutoPtr<IPipelineState> m_pPSO;
+  RefCntAutoPtr<IShaderResourceBinding> m_pSRB;
   RefCntAutoPtr<IBuffer> m_triangleVertexBuffer;
   RefCntAutoPtr<IBuffer> m_triangleIndexBuffer;
   std::vector<Rect2D> m_rects;
-  // not used yet?
   RefCntAutoPtr<IBuffer> m_vertexShaderConstants;
-  //float4x4 m_worldViewProjectionMatrix;
+  float4x4 m_worldViewProjectionMatrix;
 };
