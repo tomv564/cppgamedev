@@ -1,4 +1,5 @@
 
+#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/InputLayout.h"
 #define NOMINMAX 1
 
 // DiligentEngine needs
@@ -47,17 +48,20 @@ cbuffer Constants
 struct VSInput
 {
   float3 Pos: ATTRIB0;
+  float4 Color: ATTRIB1;
 };
 
 struct PSInput 
 { 
-    float4 Pos   : SV_POSITION;  
+    float4 Pos   : SV_POSITION;
+    float4 Color : COLOR0;
 };
 
 void main(in  VSInput VSIn,
           out PSInput PSIn) 
 {
     PSIn.Pos   = mul(float4(VSIn.Pos, 1.0), g_WorldViewProj);
+    PSIn.Color = VSIn.Color;
 }
 )";
 
@@ -65,7 +69,8 @@ void main(in  VSInput VSIn,
 static const char* PSSource = R"(
 struct PSInput 
 { 
-    float4 Pos   : SV_POSITION; 
+    float4 Pos   : SV_POSITION;
+    float4 Color : COLOR0;
 };
 
 struct PSOutput
@@ -76,12 +81,15 @@ struct PSOutput
 void main(in  PSInput  PSIn,
           out PSOutput PSOut)
 {
-    PSOut.Color = float4(1.0, 0.0, 0.0, 1.0);
+    PSOut.Color = PSIn.Color;
 }
 )";
 
 
-
+constexpr float4 toFloat4(const Color& color)
+{
+  return float4(color.r / 255, color.b / 255, color.g / 255, color.a / 255);
+} 
 
   
   bool GameApp::InitializeDiligentEngine(HWND hWnd)
@@ -108,8 +116,8 @@ void main(in  PSInput  PSIn,
     // m_rects.push_back({ { -0.5, 0.5 }, { 0, 0 } });
     // m_rects.push_back({ { 0, 0 }, { 0.5, -0.5 } });
 
-    m_rects.push_back({ { 0, 0 }, { 300, 300 } });
-    m_rects.push_back({ { 300, 300 }, { 600, 600 } });
+    m_rects.push_back({ { 0, 0 }, { 300, 300 }, {255, 0, 0, 0} });
+    m_rects.push_back({ { 300, 300 }, { 600, 600 }, {0, 255, 0, 0} });
 
   }
   void GameApp::CreatePipelineState()
@@ -178,7 +186,8 @@ void main(in  PSInput  PSIn,
       // memory layout of input data
       LayoutElement layoutElements[] = 
       {
-        LayoutElement{0, 0, 3, VT_FLOAT32, False}
+        LayoutElement{0, 0, 3, VT_FLOAT32, False}, // position
+        LayoutElement{1, 0, 4, VT_FLOAT32, False} // color
       };
 
       PSOCreateInfo.GraphicsPipeline.InputLayout.LayoutElements = layoutElements;
@@ -211,20 +220,18 @@ void main(in  PSInput  PSIn,
       struct Vertex
       {
         float3 pos;
+        float4 color;
       };
       
       std::vector<Vertex> vertices;
       for (const auto& rect : m_rects)
       {
         // add 4 vertices 
-        vertices.push_back({float3(rect.bottomRight.x, rect.topLeft.y, 0.0)});
-        vertices.push_back({float3(rect.topLeft.x, rect.topLeft.y, 0.0)});
-        vertices.push_back({float3(rect.bottomRight.x, rect.bottomRight.y, 0.0)});
-        vertices.push_back({float3(rect.topLeft.x, rect.bottomRight.y, 0.0)});
+        vertices.push_back({float3(rect.bottomRight.x, rect.topLeft.y, 0.0), toFloat4(rect.color)});
+        vertices.push_back({float3(rect.topLeft.x, rect.topLeft.y, 0.0), toFloat4(rect.color)});
+        vertices.push_back({float3(rect.bottomRight.x, rect.bottomRight.y, 0.0), toFloat4(rect.color)});
+        vertices.push_back({float3(rect.topLeft.x, rect.bottomRight.y, 0.0), toFloat4(rect.color)});
       }
-
-      // TODO: project from screen space here or probably in vertex shader?
-
 
       Uint64 dataSize  = sizeof(vertices[0]) * vertices.size();
       BufferDesc vertBufferDesc;

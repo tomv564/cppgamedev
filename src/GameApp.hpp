@@ -1,6 +1,7 @@
 
 // DiligentEngine needs
 
+#include "DiligentEngine/DiligentCore/Primitives/interface/BasicTypes.h"
 #define NOMINMAX 1
 
 #ifndef PLATFORM_WIN32
@@ -33,10 +34,19 @@ struct Point2D
   float y;
 };
 
+struct Color
+{
+  int r;
+  int g;
+  int b;
+  int a;
+};
+
 struct Rect2D
 {
   Point2D topLeft;
   Point2D bottomRight;
+  Color color;
 };
 
 class GameApp
