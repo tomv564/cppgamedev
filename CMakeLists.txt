@@ -18,7 +18,7 @@ include(${_project_options_SOURCE_DIR}/Index.cmake)
 # run_vcpkg()
 
 # Set the project name and language
-project(myproject LANGUAGES CXX)
+project(cppgamedev LANGUAGES CXX)
 
 # Initialize project_options variable related to this project
 # This overwrites `project_options` and sets `project_warnings`

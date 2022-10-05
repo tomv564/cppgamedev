@@ -1,6 +1,7 @@
 
 // DiligentEngine needs
 
+#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/EngineFactory.h"
 #include "DiligentEngine/DiligentCore/Primitives/interface/BasicTypes.h"
 #define NOMINMAX 1
 
@@ -47,6 +48,8 @@ struct Rect2D
   Point2D topLeft;
   Point2D bottomRight;
   Color color;
+  char ch;
+  std::string texture;
 };
 
 class GameApp
@@ -57,17 +60,21 @@ public:
   void CreatePipelineState();
   void CreateVertexBuffer();
   void CreateIndexBuffer();
+  void LoadTexture();
   void Render();
   void Present();
   
   private:
   RefCntAutoPtr<IRenderDevice> m_pDevice;
+  RefCntAutoPtr<IEngineFactory> m_engineFactory;
   RefCntAutoPtr<IDeviceContext> m_pImmediateContext;
   RefCntAutoPtr<ISwapChain> m_pSwapChain;
   RefCntAutoPtr<IPipelineState> m_pPSO;
   RefCntAutoPtr<IShaderResourceBinding> m_pSRB;
   RefCntAutoPtr<IBuffer> m_triangleVertexBuffer;
   RefCntAutoPtr<IBuffer> m_triangleIndexBuffer;
+  RefCntAutoPtr<ITextureView> m_textureSRV;
+
   std::vector<Rect2D> m_rects;
   RefCntAutoPtr<IBuffer> m_vertexShaderConstants;
   float4x4 m_worldViewProjectionMatrix;

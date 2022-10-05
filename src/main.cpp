@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <spdlog/spdlog.h>
+#include <filesystem>
 
 #ifndef UNICODE
 #define UNICODE
@@ -20,7 +21,7 @@ int main(int argc, const char **argv)
 {
 
   //Use the default logger (stdout, multi-threaded, colored)
-  spdlog::info("Hello, {}!", "World");
+  spdlog::info("Game running from {}", std::filesystem::current_path().string());
 
   fmt::print("Hello, from {}\n", "{fmt}");
 
@@ -48,7 +49,7 @@ int main(int argc, const char **argv)
   hwnd = CreateWindowEx(
     0,// Optional window styles.
     CLASS_NAME,// Window class
-    L"Learn to Program Windows",// Window text
+    L"Game Window",// Window text
     WS_OVERLAPPEDWINDOW,// Window style
 
     // Size and position
@@ -77,6 +78,7 @@ int main(int argc, const char **argv)
   g_pTheApp->CreatePipelineState();
   g_pTheApp->CreateVertexBuffer();
   g_pTheApp->CreateIndexBuffer();
+  g_pTheApp->LoadTexture();
   
   ShowWindow(hwnd, SW_SHOWDEFAULT);
 

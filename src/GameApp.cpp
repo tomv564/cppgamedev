@@ -1,4 +1,5 @@
 
+#include "DiligentEngine/DiligentCore/Common/interface/RefCntAutoPtr.hpp"
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/InputLayout.h"
 #define NOMINMAX 1
 
@@ -19,6 +20,8 @@
 
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/GraphicsTypes.h"
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/ShaderResourceVariable.h"
+
+#include "DiligentEngine/DiligentTools/TextureLoader/interface/TextureUtilities.h"
 
 
 #include <EngineFactoryD3D12.h>
@@ -67,6 +70,8 @@ void main(in  VSInput VSIn,
 
 // Pixel shader simply outputs interpolated vertex color
 static const char* PSSource = R"(
+Texture2D    g_Texture;
+
 struct PSInput 
 { 
     float4 Pos   : SV_POSITION;
@@ -88,7 +93,7 @@ void main(in  PSInput  PSIn,
 
 constexpr float4 toFloat4(const Color& color)
 {
-  return float4(color.r / 255, color.b / 255, color.g / 255, color.a / 255);
+    return float4(color.r / 255.f, color.b / 255.f, color.g / 255.f, color.a / 255.f);
 } 
 
   
@@ -104,17 +109,29 @@ constexpr float4 toFloat4(const Color& color)
     auto GetEngineFactoryD3D12 = LoadGraphicsEngineD3D12();
 #    endif
 
-    auto* pFactoryD3D12 = GetEngineFactoryD3D12();
-    pFactoryD3D12->CreateDeviceAndContextsD3D12(EngineCI, &m_pDevice, &m_pImmediateContext);
+    auto engineFactory = GetEngineFactoryD3D12();
+    engineFactory->CreateDeviceAndContextsD3D12(EngineCI, &m_pDevice, &m_pImmediateContext);
     Win32NativeWindow Window{hWnd};
-    pFactoryD3D12->CreateSwapChainD3D12(m_pDevice, m_pImmediateContext, SCDesc, FullScreenModeDesc{}, Window, &m_pSwapChain);
+    engineFactory->CreateSwapChainD3D12(m_pDevice, m_pImmediateContext, SCDesc, FullScreenModeDesc{}, Window, &m_pSwapChain);
     
+    m_engineFactory = engineFactory;
     return true;
   }
   void GameApp::BuildUI()
   {
     // m_rects.push_back({ { -0.5, 0.5 }, { 0, 0 } });
     // m_rects.push_back({ { 0, 0 }, { 0.5, -0.5 } });
+    // const char* text = "Hello World!";
+    std::string str("Hello World!");
+
+    float pos = 0;
+    float width = 30;
+    float height = 40;
+    float spacing = 4;
+    for (const auto ch : str) {
+      m_rects.push_back({{ pos, 0 }, { pos + width, height }, { 255, 0, 0, 0 }, ch, ""});
+        pos += width + spacing;
+    }
 
     m_rects.push_back({ { 0, 0 }, { 300, 300 }, {255, 0, 0, 0} });
     m_rects.push_back({ { 300, 300 }, { 600, 600 }, {0, 255, 0, 0} });
@@ -142,7 +159,7 @@ constexpr float4 toFloat4(const Color& color)
       // Primitive topology defines what kind of primitives will be rendered by this pipeline state
       PSOCreateInfo.GraphicsPipeline.PrimitiveTopology            = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
       // No back face culling for this tutorial
-      PSOCreateInfo.GraphicsPipeline.RasterizerDesc.CullMode      = CULL_MODE_NONE;
+      PSOCreateInfo.GraphicsPipeline.RasterizerDesc.CullMode      = CULL_MODE_BACK;
       // Disable depth testing
       PSOCreateInfo.GraphicsPipeline.DepthStencilDesc.DepthEnable = True;
       // clang-format on
@@ -153,13 +170,20 @@ constexpr float4 toFloat4(const Color& color)
       ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_HLSL;
       // OpenGL backend requires emulated combined HLSL texture samplers (g_Texture + g_Texture_sampler combination)
       ShaderCI.UseCombinedTextureSamplers = true;
+
+      // Create a shader source stream factory to load shaders from files.
+      RefCntAutoPtr<IShaderSourceInputStreamFactory> pShaderSourceFactory;
+      m_engineFactory->CreateDefaultShaderSourceStreamFactory(nullptr, &pShaderSourceFactory);
+      ShaderCI.pShaderSourceStreamFactory = pShaderSourceFactory;
+     
       // Create a vertex shader
       RefCntAutoPtr<IShader> pVS;
       {
           ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
           ShaderCI.EntryPoint      = "main";
           ShaderCI.Desc.Name       = "Triangle vertex shader";
-          ShaderCI.Source          = VSSource;
+          // ShaderCI.Source          = VSSource;
+          ShaderCI.FilePath = "ui_vertex.hlsl";
           m_pDevice->CreateShader(ShaderCI, &pVS);
 
           // Create dynamic uniform buffer that will store our transformation matrix
@@ -179,7 +203,8 @@ constexpr float4 toFloat4(const Color& color)
           ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
           ShaderCI.EntryPoint      = "main";
           ShaderCI.Desc.Name       = "Triangle pixel shader";
-          ShaderCI.Source          = PSSource;
+          // ShaderCI.Source          = PSSource;
+          ShaderCI.FilePath = "ui_pixel.hlsl";
           m_pDevice->CreateShader(ShaderCI, &pPS);
       }
 
@@ -187,23 +212,48 @@ constexpr float4 toFloat4(const Color& color)
       LayoutElement layoutElements[] = 
       {
         LayoutElement{0, 0, 3, VT_FLOAT32, False}, // position
-        LayoutElement{1, 0, 4, VT_FLOAT32, False} // color
+        LayoutElement{1, 0, 4, VT_FLOAT32, False}, // color
+        LayoutElement{2, 0, 2, VT_FLOAT32, False} // texture coordinates
       };
+
+      PSOCreateInfo.pVS = pVS;
+      PSOCreateInfo.pPS = pPS;
 
       PSOCreateInfo.GraphicsPipeline.InputLayout.LayoutElements = layoutElements;
       PSOCreateInfo.GraphicsPipeline.InputLayout.NumElements = _countof(layoutElements);
 
 
-      // Finally, create the pipeline state
-      PSOCreateInfo.pVS = pVS;
-      PSOCreateInfo.pPS = pPS;
-
       PSOCreateInfo.PSODesc.ResourceLayout.DefaultVariableType = SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
 
+      // Shader variables should typically be mutable, which means they are expected
+      // to change on a per-instance basis
+      ShaderResourceVariableDesc Vars[] = 
+      {
+          {SHADER_TYPE_PIXEL, "g_Texture", SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE}
+      };
+
+      PSOCreateInfo.PSODesc.ResourceLayout.Variables    = Vars;
+      PSOCreateInfo.PSODesc.ResourceLayout.NumVariables = _countof(Vars);
+
+
+      // Define immutable sampler for g_Texture. Immutable samplers should be used whenever possible
+      SamplerDesc SamLinearClampDesc
+      {
+         FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, FILTER_TYPE_LINEAR, 
+         TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP, TEXTURE_ADDRESS_CLAMP
+      };
+      ImmutableSamplerDesc ImtblSamplers[] = 
+      {
+         {SHADER_TYPE_PIXEL, "g_Texture", SamLinearClampDesc}
+      };
+
+      PSOCreateInfo.PSODesc.ResourceLayout.ImmutableSamplers    = ImtblSamplers;
+      PSOCreateInfo.PSODesc.ResourceLayout.NumImmutableSamplers = _countof(ImtblSamplers);
+
+      // Finally, create the pipeline state
       m_pDevice->CreateGraphicsPipelineState(PSOCreateInfo, &m_pPSO);
 
-      // for now this is identity but we'd like to use screen coordinates to build UI instead - eg based on 1080px height
-      m_worldViewProjectionMatrix = float4x4::OrthoOffCenter(0.0, 1920.0, 1080.0, 0.0, 1.0, -1.0, false); //float4x4::Identity();
+      m_worldViewProjectionMatrix = float4x4::OrthoOffCenter(0.0, 1920.0, 1080.0, 0.0, 1.0, -1.0, false);
 
       // Since we did not explcitly specify the type for 'Constants' variable, default
       // type (SHADER_RESOURCE_VARIABLE_TYPE_STATIC) will be used. Static variables never
@@ -221,16 +271,35 @@ constexpr float4 toFloat4(const Color& color)
       {
         float3 pos;
         float4 color;
+        float2 uv;
       };
       
       std::vector<Vertex> vertices;
       for (const auto& rect : m_rects)
       {
-        // add 4 vertices 
-        vertices.push_back({float3(rect.bottomRight.x, rect.topLeft.y, 0.0), toFloat4(rect.color)});
-        vertices.push_back({float3(rect.topLeft.x, rect.topLeft.y, 0.0), toFloat4(rect.color)});
-        vertices.push_back({float3(rect.bottomRight.x, rect.bottomRight.y, 0.0), toFloat4(rect.color)});
-        vertices.push_back({float3(rect.topLeft.x, rect.bottomRight.y, 0.0), toFloat4(rect.color)});
+        // add vertices for quad with texture coordinates
+        // u = horizontal left->right 
+        // v = vertical bottom->top
+
+        // winding order should be clockwise to get a front-facing triangles
+
+        // bottom left
+        vertices.push_back({float3(rect.topLeft.x, rect.bottomRight.y, 0.0), toFloat4(rect.color), float2(0, 1)});
+
+        // top left
+        vertices.push_back({float3(rect.topLeft.x, rect.topLeft.y, 0.0), toFloat4(rect.color), float2(0, 0)});
+
+        // top right
+        vertices.push_back({float3(rect.bottomRight.x, rect.topLeft.y, 0.0), toFloat4(rect.color), float2(1, 0)});
+        
+        // // top right (2)
+        // vertices.push_back({float3(rect.bottomRight.x, rect.topLeft.y, 0.0), toFloat4(rect.color), float2(1, 1)});
+
+        // bottom right
+        vertices.push_back({float3(rect.bottomRight.x, rect.bottomRight.y, 0.0), toFloat4(rect.color), float2(1, 1)});
+        
+        // // bottom left
+        // vertices.push_back({float3(rect.topLeft.x, rect.bottomRight.y, 0.0), toFloat4(rect.color), float2()});
       }
 
       Uint64 dataSize  = sizeof(vertices[0]) * vertices.size();
@@ -259,9 +328,12 @@ constexpr float4 toFloat4(const Color& color)
       for (const auto& rect : m_rects)
       {
         // add 6 indices
+        // bottomleft, topright, topleft
         indices.push_back(offset+0);
         indices.push_back(offset+1);
-        indices.push_back(offset+3);
+        indices.push_back(offset+2);
+
+        // bottomleft, bottomright, topright
         indices.push_back(offset+0);
         indices.push_back(offset+2);
         indices.push_back(offset+3);
@@ -281,6 +353,19 @@ constexpr float4 toFloat4(const Color& color)
       indexBufferData.DataSize = dataSize;
 
       m_pDevice->CreateBuffer(indexBufferDesc, &indexBufferData, &m_triangleIndexBuffer);
+
+  }
+
+  void GameApp::LoadTexture()
+  {
+    TextureLoadInfo loadInfo;
+    loadInfo.IsSRGB = true;
+    RefCntAutoPtr<ITexture> texture;
+    CreateTextureFromFile("characters.png", loadInfo, m_pDevice, &texture);
+
+    m_textureSRV = texture->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
+
+    m_pSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_textureSRV);
 
   }
 
@@ -317,7 +402,7 @@ constexpr float4 toFloat4(const Color& color)
 
         DrawIndexedAttribs drawAttrs;
         drawAttrs.IndexType = VT_UINT32;
-        drawAttrs.NumIndices = m_rects.size() * 6; // Render 6 vertices
+        drawAttrs.NumIndices = static_cast<int>(m_rects.size()) * 6; // Render 6 vertices
         drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
         m_pImmediateContext->DrawIndexed(drawAttrs);
   }
