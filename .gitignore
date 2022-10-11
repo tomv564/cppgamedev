@@ -1,7 +1,9 @@
 # Build directories and binary files
+ninjabuild/
 build/
 out/
 cmake-build-*/
+src/DiligentEngine
 
 # IDE files
 .vs/
