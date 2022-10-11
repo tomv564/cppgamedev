@@ -16,5 +16,5 @@ struct PSOutput
 void main(in  PSInput  PSIn,
           out PSOutput PSOut)
 {
-    PSOut.Color = g_Texture.Sample(g_Texture_sampler, PSIn.UV); //PSIn.Color;
+    PSOut.Color = PSIn.Color * g_Texture.Sample(g_Texture_sampler, PSIn.UV);
 }

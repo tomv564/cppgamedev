@@ -4,7 +4,7 @@ find_package(spdlog)
 find_package(docopt)
 
 # Generic test that uses conan libs
-add_executable(game main.cpp GameApp.cpp)
+add_executable(game WIN32 main.cpp GameApp.cpp)
 
 add_subdirectory(DiligentEngine/DiligentCore)
 add_subdirectory(DiligentEngine/DiligentTools)

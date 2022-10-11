@@ -1,6 +1,4 @@
 
-#include "DiligentEngine/DiligentCore/Common/interface/RefCntAutoPtr.hpp"
-#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/InputLayout.h"
 #define NOMINMAX 1
 
 // DiligentEngine needs
@@ -12,6 +10,8 @@
 #include <stdlib.h>
 #include "GameApp.hpp"
 
+#include "DiligentEngine/DiligentCore/Common/interface/RefCntAutoPtr.hpp"
+#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/InputLayout.h"
 
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsTools/interface/MapHelper.hpp"
 
@@ -40,55 +40,6 @@ using namespace Diligent;
 
 // Diligent Engine can use HLSL source on all supported platforms.
 // It will convert HLSL to GLSL in OpenGL mode, while Vulkan backend will compile it directly to SPIRV.
-
-static const char* VSSource = R"(
-
-cbuffer Constants
-{
-    float4x4 g_WorldViewProj;
-};
-
-struct VSInput
-{
-  float3 Pos: ATTRIB0;
-  float4 Color: ATTRIB1;
-};
-
-struct PSInput 
-{ 
-    float4 Pos   : SV_POSITION;
-    float4 Color : COLOR0;
-};
-
-void main(in  VSInput VSIn,
-          out PSInput PSIn) 
-{
-    PSIn.Pos   = mul(float4(VSIn.Pos, 1.0), g_WorldViewProj);
-    PSIn.Color = VSIn.Color;
-}
-)";
-
-// Pixel shader simply outputs interpolated vertex color
-static const char* PSSource = R"(
-Texture2D    g_Texture;
-
-struct PSInput 
-{ 
-    float4 Pos   : SV_POSITION;
-    float4 Color : COLOR0;
-};
-
-struct PSOutput
-{ 
-    float4 Color : SV_TARGET; 
-};
-
-void main(in  PSInput  PSIn,
-          out PSOutput PSOut)
-{
-    PSOut.Color = PSIn.Color;
-}
-)";
 
 
 constexpr float4 toFloat4(const Color& color)
@@ -122,19 +73,19 @@ constexpr float4 toFloat4(const Color& color)
     // m_rects.push_back({ { -0.5, 0.5 }, { 0, 0 } });
     // m_rects.push_back({ { 0, 0 }, { 0.5, -0.5 } });
     // const char* text = "Hello World!";
-    std::string str("Hello World!");
+    // std::string str("Hello World!");
 
-    float pos = 0;
-    float width = 30;
-    float height = 40;
-    float spacing = 4;
-    for (const auto ch : str) {
-      m_rects.push_back({{ pos, 0 }, { pos + width, height }, { 255, 0, 0, 0 }, ch, ""});
-        pos += width + spacing;
-    }
+    // float pos = 0;
+    // float width = 30;
+    // float height = 40;
+    // float spacing = 4;
+    // for (const auto ch : str) {
+    //   m_rects.push_back({{ pos, 0 }, { pos + width, height }, { 255, 0, 0, 0 }, ch, ""});
+    //     pos += width + spacing;
+    // }
 
-    m_rects.push_back({ { 0, 0 }, { 300, 300 }, {255, 0, 0, 0} });
-    m_rects.push_back({ { 300, 300 }, { 600, 600 }, {0, 255, 0, 0} });
+    m_rects.push_back({ { 0, 0 }, { 300, 300 }, {255, 0, 0, 255} });
+    m_rects.push_back({ { 300, 300 }, { 600, 600 }, {0, 255, 0, 255} });
 
   }
   void GameApp::CreatePipelineState()
@@ -159,7 +110,7 @@ constexpr float4 toFloat4(const Color& color)
       // Primitive topology defines what kind of primitives will be rendered by this pipeline state
       PSOCreateInfo.GraphicsPipeline.PrimitiveTopology            = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
       // No back face culling for this tutorial
-      PSOCreateInfo.GraphicsPipeline.RasterizerDesc.CullMode      = CULL_MODE_BACK;
+      PSOCreateInfo.GraphicsPipeline.RasterizerDesc.CullMode      = CULL_MODE_NONE;
       // Disable depth testing
       PSOCreateInfo.GraphicsPipeline.DepthStencilDesc.DepthEnable = True;
       // clang-format on
@@ -182,7 +133,6 @@ constexpr float4 toFloat4(const Color& color)
           ShaderCI.Desc.ShaderType = SHADER_TYPE_VERTEX;
           ShaderCI.EntryPoint      = "main";
           ShaderCI.Desc.Name       = "Triangle vertex shader";
-          // ShaderCI.Source          = VSSource;
           ShaderCI.FilePath = "ui_vertex.hlsl";
           m_pDevice->CreateShader(ShaderCI, &pVS);
 
@@ -203,7 +153,6 @@ constexpr float4 toFloat4(const Color& color)
           ShaderCI.Desc.ShaderType = SHADER_TYPE_PIXEL;
           ShaderCI.EntryPoint      = "main";
           ShaderCI.Desc.Name       = "Triangle pixel shader";
-          // ShaderCI.Source          = PSSource;
           ShaderCI.FilePath = "ui_pixel.hlsl";
           m_pDevice->CreateShader(ShaderCI, &pPS);
       }
@@ -361,7 +310,7 @@ constexpr float4 toFloat4(const Color& color)
     TextureLoadInfo loadInfo;
     loadInfo.IsSRGB = true;
     RefCntAutoPtr<ITexture> texture;
-    CreateTextureFromFile("characters.png", loadInfo, m_pDevice, &texture);
+    CreateTextureFromFile("characters_on_white.png", loadInfo, m_pDevice, &texture);
 
     m_textureSRV = texture->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
 

@@ -1,10 +1,18 @@
 
 ### TODO
 
+Immediate-mode text
+Fix renderdoc / graphics tools compat?
+
+blend texture with color
+deal with texture not being used?
+
+
+### Quad rendering & Shader cleanup
+
 Extract shaders
 Immediate-mode rectangle
 With colors
-Immediate-mode text
 
 
 ### Tutorial refactor

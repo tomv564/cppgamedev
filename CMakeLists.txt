@@ -18,7 +18,7 @@ include(${_project_options_SOURCE_DIR}/Index.cmake)
 # run_vcpkg()
 
 # Set the project name and language
-project(cppgamedev LANGUAGES CXX)
+project(cppgamedev LANGUAGES CXX C)
 
 # Initialize project_options variable related to this project
 # This overwrites `project_options` and sets `project_warnings`
@@ -53,7 +53,7 @@ add_definitions(-DNOMINMAX)
 add_subdirectory(src)
 
 # Adding the tests:
-option(ENABLE_TESTING "Enable the tests" ON)
+option(ENABLE_TESTING "Enable the tests" OFF)
 if(ENABLE_TESTING)
   enable_testing()
   message("Building Tests. Be sure to check out test/constexpr_tests for constexpr
