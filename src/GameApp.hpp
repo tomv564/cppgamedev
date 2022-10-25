@@ -1,8 +1,6 @@
 
 // DiligentEngine needs
 
-#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/EngineFactory.h"
-#include "DiligentEngine/DiligentCore/Primitives/interface/BasicTypes.h"
 #define NOMINMAX 1
 
 #ifndef PLATFORM_WIN32
@@ -12,12 +10,14 @@
 #include <windows.h>
 
 
+#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/EngineFactory.h"
+#include "DiligentEngine/DiligentCore/Primitives/interface/BasicTypes.h"
 #include "DiligentEngine/DiligentCore/Common/interface/RefCntAutoPtr.hpp"
-
 #include "DiligentEngine/DiligentCore/Common/interface/BasicMath.hpp"
+#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/RenderDevice.h"
 
 
-#include <RenderDevice.h>
+// #include <RenderDevice.h>
 #include <DeviceContext.h>
 #include <SwapChain.h>
 
@@ -46,7 +46,12 @@ struct Color
 struct Rect2D
 {
   Point2D topLeft;
-  Point2D bottomRight;
+  Point2D bottomRight;  
+};
+
+struct Surface
+{
+  Rect2D rect;
   Color color;
   char ch;
   std::string texture;
@@ -75,7 +80,7 @@ public:
   RefCntAutoPtr<IBuffer> m_triangleIndexBuffer;
   RefCntAutoPtr<ITextureView> m_textureSRV;
 
-  std::vector<Rect2D> m_rects;
+  std::vector<Surface> m_surfaces;
   RefCntAutoPtr<IBuffer> m_vertexShaderConstants;
   float4x4 m_worldViewProjectionMatrix;
 };

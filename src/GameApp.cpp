@@ -1,4 +1,6 @@
 
+#include <algorithm>
+#include <tuple>
 #define NOMINMAX 1
 
 // DiligentEngine needs
@@ -31,7 +33,8 @@
 #include <SwapChain.h>
 
 #include <vector>
-
+#include <algorithm>
+#include <iterator>
 
 using namespace Diligent;
 
@@ -42,12 +45,31 @@ using namespace Diligent;
 // It will convert HLSL to GLSL in OpenGL mode, while Vulkan backend will compile it directly to SPIRV.
 
 
+static const std::string characters = R"( !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~")";
+
+
 constexpr float4 toFloat4(const Color& color)
 {
-    return float4(color.r / 255.f, color.b / 255.f, color.g / 255.f, color.a / 255.f);
+    return float4(color.r / 255.F, color.b / 255.F, color.g / 255.F, color.a / 255.F);
 } 
 
-  
+constexpr Rect2D getCharacterUVs(char c)
+{
+    int index = static_cast<int>(characters.find(c));
+    int row = index / 16;
+    int col = index % 16;
+
+    const float rowHeight = 1.0F / 6;
+    const float top = row * rowHeight;
+    const float bottom = top + rowHeight;
+
+    const float charWidth = 1.0F / 16; // should be 256 in 16x16px chunks
+    const float left = col * charWidth;
+    const float right = left + charWidth;
+    return {{left, top}, {right, bottom}};
+
+}
+
   bool GameApp::InitializeDiligentEngine(HWND hWnd)
   {
     SwapChainDesc SCDesc;
@@ -70,22 +92,19 @@ constexpr float4 toFloat4(const Color& color)
   }
   void GameApp::BuildUI()
   {
-    // m_rects.push_back({ { -0.5, 0.5 }, { 0, 0 } });
-    // m_rects.push_back({ { 0, 0 }, { 0.5, -0.5 } });
-    // const char* text = "Hello World!";
-    // std::string str("Hello World!");
 
-    // float pos = 0;
-    // float width = 30;
-    // float height = 40;
-    // float spacing = 4;
-    // for (const auto ch : str) {
-    //   m_rects.push_back({{ pos, 0 }, { pos + width, height }, { 255, 0, 0, 0 }, ch, ""});
-    //     pos += width + spacing;
-    // }
+    std::string str("Hello World! Bananas - taasty");
 
-    m_rects.push_back({ { 0, 0 }, { 300, 300 }, {255, 0, 0, 255} });
-    m_rects.push_back({ { 300, 300 }, { 600, 600 }, {0, 255, 0, 255} });
+    float left = 200;
+    float top = 200;
+    float width = 24;
+    float height = 40; // TODO 6x32?
+    float spacing = 0;
+    for (const auto ch : str) {
+      m_surfaces.push_back({ { { left, top }, { left + width, top + height } }, { 255, 255, 255, 255 }, ch, "" });
+      left += width + spacing;
+    }
+
 
   }
   void GameApp::CreatePipelineState()
@@ -216,53 +235,57 @@ constexpr float4 toFloat4(const Color& color)
 
   void GameApp::CreateVertexBuffer()
   {
-      struct Vertex
-      {
-        float3 pos;
-        float4 color;
-        float2 uv;
-      };
-      
-      std::vector<Vertex> vertices;
-      for (const auto& rect : m_rects)
-      {
-        // add vertices for quad with texture coordinates
-        // u = horizontal left->right 
-        // v = vertical bottom->top
+        struct Vertex
+        {
+            float3 pos;
+            float4 color;
+            float2 uv;
+        };
+  
+        std::vector<Vertex> vertices;
+        for (const auto& s : m_surfaces)
+        {
+            // add vertices for quad with texture coordinates
+            // u = horizontal left->right 
+            // v = vertical bottom->top
 
-        // winding order should be clockwise to get a front-facing triangles
+            // winding order should be clockwise to get a front-facing triangles
+            const Rect2D uv = s.ch != 0 ? getCharacterUVs(s.ch) : Rect2D {{0, 0}, {1, 1}};
+            // auto charUV = getCharacterUVs(); // should be A?
 
-        // bottom left
-        vertices.push_back({float3(rect.topLeft.x, rect.bottomRight.y, 0.0), toFloat4(rect.color), float2(0, 1)});
+            // bottom left
+            vertices.push_back({float3(s.rect.topLeft.x, s.rect.bottomRight.y, 0.0), toFloat4(s.color), float2(uv.topLeft.x, uv.bottomRight.y)});
 
-        // top left
-        vertices.push_back({float3(rect.topLeft.x, rect.topLeft.y, 0.0), toFloat4(rect.color), float2(0, 0)});
+            // top left
+            vertices.push_back({float3(s.rect.topLeft.x, s.rect.topLeft.y, 0.0), toFloat4(s.color), float2(uv.topLeft.x, uv.topLeft.y)});
 
-        // top right
-        vertices.push_back({float3(rect.bottomRight.x, rect.topLeft.y, 0.0), toFloat4(rect.color), float2(1, 0)});
-        
-        // // top right (2)
-        // vertices.push_back({float3(rect.bottomRight.x, rect.topLeft.y, 0.0), toFloat4(rect.color), float2(1, 1)});
+            // top right
+            vertices.push_back({float3(s.rect.bottomRight.x, s.rect.topLeft.y, 0.0), toFloat4(s.color), float2(uv.bottomRight.x, uv.topLeft.y)});
 
-        // bottom right
-        vertices.push_back({float3(rect.bottomRight.x, rect.bottomRight.y, 0.0), toFloat4(rect.color), float2(1, 1)});
-        
-        // // bottom left
-        // vertices.push_back({float3(rect.topLeft.x, rect.bottomRight.y, 0.0), toFloat4(rect.color), float2()});
-      }
+            // bottom right
+            vertices.push_back({float3(s.rect.bottomRight.x, s.rect.bottomRight.y, 0.0), toFloat4(s.color), float2(uv.bottomRight.x, uv.bottomRight.y)});
 
-      Uint64 dataSize  = sizeof(vertices[0]) * vertices.size();
-      BufferDesc vertBufferDesc;
-      vertBufferDesc.Name = "Triangle vertex buffer";
-      vertBufferDesc.Usage = USAGE_IMMUTABLE;
-      vertBufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-      vertBufferDesc.Size = dataSize; //sizeof(triangleVertices);
-      
-      BufferData vertBufferData;  
-      vertBufferData.pData = vertices.data();
-      vertBufferData.DataSize = dataSize; //sizeof(triangleVertices);
 
-      m_pDevice->CreateBuffer(vertBufferDesc, &vertBufferData, &m_triangleVertexBuffer);
+        }
+
+        // for (Vertex& vertex : vertices)
+        // {
+        //     vertex.uv.u + 0.1f;
+        //     vertex.uv.v = vertex.uv.v * 0.5f;
+        // }
+
+        Uint64 dataSize  = sizeof(vertices[0]) * vertices.size();
+        BufferDesc vertBufferDesc;
+        vertBufferDesc.Name = "Triangle vertex buffer";
+        vertBufferDesc.Usage = USAGE_IMMUTABLE;
+        vertBufferDesc.BindFlags = BIND_VERTEX_BUFFER;
+        vertBufferDesc.Size = dataSize; //sizeof(triangleVertices);
+
+        BufferData vertBufferData;  
+        vertBufferData.pData = vertices.data();
+        vertBufferData.DataSize = dataSize; //sizeof(triangleVertices);
+
+        m_pDevice->CreateBuffer(vertBufferDesc, &vertBufferData, &m_triangleVertexBuffer);
   }
 
   void GameApp::CreateIndexBuffer()
@@ -274,7 +297,7 @@ constexpr float4 toFloat4(const Color& color)
 
       uint32_t offset = 0;
       std::vector<Uint32> indices;
-      for (const auto& rect : m_rects)
+      for ([[maybe_unused]] const auto& rect : m_surfaces)
       {
         // add 6 indices
         // bottomleft, topright, topleft
@@ -351,7 +374,7 @@ constexpr float4 toFloat4(const Color& color)
 
         DrawIndexedAttribs drawAttrs;
         drawAttrs.IndexType = VT_UINT32;
-        drawAttrs.NumIndices = static_cast<int>(m_rects.size()) * 6; // Render 6 vertices
+        drawAttrs.NumIndices = static_cast<int>(m_surfaces.size()) * 6; // Render 6 vertices
         drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
         m_pImmediateContext->DrawIndexed(drawAttrs);
   }
