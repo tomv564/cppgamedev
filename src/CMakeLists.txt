@@ -8,6 +8,7 @@ add_executable(game WIN32 main.cpp GameApp.cpp)
 
 add_subdirectory(DiligentEngine/DiligentCore)
 add_subdirectory(DiligentEngine/DiligentTools)
+add_subdirectory(DiligentEngine/DiligentSamples)
 
 #target_include_directories(game PRIVATE "../DiligentEngine/DiligentCore")
 target_link_libraries(

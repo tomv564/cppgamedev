@@ -1,6 +1,7 @@
 
 // DiligentEngine needs
 
+#include <vector>
 #define NOMINMAX 1
 
 #ifndef PLATFORM_WIN32
@@ -18,8 +19,10 @@
 
 
 // #include <RenderDevice.h>
-#include <DeviceContext.h>
-#include <SwapChain.h>
+#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/DeviceContext.h"
+#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/SwapChain.h"
+// #include <DeviceContext.h>
+// #include <SwapChain.h>
 
 using namespace Diligent;
 
@@ -49,13 +52,41 @@ struct Rect2D
   Point2D bottomRight;  
 };
 
-struct Surface
+
+struct Vertex
+{
+    float3 pos;
+    float4 color;
+    float2 uv;
+};
+
+struct Quad
 {
   Rect2D rect;
   Color color;
   char ch;
   std::string texture;
 };
+
+class Surface
+{
+
+public:
+  Rect2D rect;
+  Color backgroundColor;
+  std::string text;
+  std::string texture;
+
+  void getIndices(std::vector<Uint32>& indices, Uint32& offset) const;
+  void getVertices(std::vector<Vertex>& vertices) const;
+  void createQuads();
+
+private:
+  std::vector<Quad> quads;
+
+};
+
+
 
 class GameApp
 {
@@ -81,6 +112,8 @@ public:
   RefCntAutoPtr<ITextureView> m_textureSRV;
 
   std::vector<Surface> m_surfaces;
+  std::vector<Uint32> m_indices;
+
   RefCntAutoPtr<IBuffer> m_vertexShaderConstants;
   float4x4 m_worldViewProjectionMatrix;
 };

@@ -1,5 +1,5 @@
 
-#include <algorithm>
+#include <numeric>
 #include <tuple>
 #define NOMINMAX 1
 
@@ -14,23 +14,19 @@
 
 #include "DiligentEngine/DiligentCore/Common/interface/RefCntAutoPtr.hpp"
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/InputLayout.h"
-
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsTools/interface/MapHelper.hpp"
-
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/Buffer.h"
-#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/DeviceContext.h"
+// #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/DeviceContext.h"
 
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/GraphicsTypes.h"
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/ShaderResourceVariable.h"
-
 #include "DiligentEngine/DiligentTools/TextureLoader/interface/TextureUtilities.h"
+#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h"
+// #include <EngineFactoryD3D12.h>
 
-
-#include <EngineFactoryD3D12.h>
-
-#include <RenderDevice.h>
-#include <DeviceContext.h>
-#include <SwapChain.h>
+// #include <RenderDevice.h>
+// #include <DeviceContext.h>
+// #include <SwapChain.h>
 
 #include <vector>
 #include <algorithm>
@@ -70,6 +66,75 @@ constexpr Rect2D getCharacterUVs(char c)
 
 }
 
+void Surface::createQuads()
+{
+
+    quads.push_back({rect, backgroundColor/*, char, texture */});
+
+
+    if (!text.empty())
+    {
+        float left = 200;
+        float top = 200;
+        float width = 24;
+        float height = 40; // TODO 6x32?
+        float spacing = 0;
+        for (const auto ch : text) {
+          quads.push_back({ { { left, top }, { left + width, top + height } }, { 255, 255, 255, 255 }, ch, "" });
+          left += width + spacing;
+        }        
+    }
+}
+
+
+void Surface::getVertices(std::vector<Vertex>& vertices) const
+{
+    // add vertices for quad with texture coordinates
+    // u = horizontal left->right 
+    // v = vertical bottom->top
+
+    for (const Quad& s : quads)
+    {
+        // winding order should be clockwise to get a front-facing triangles
+        const Rect2D uv = s.ch != 0 ? getCharacterUVs(s.ch) : Rect2D {{0, 0}, {1, 1}};
+        // auto charUV = getCharacterUVs(); // should be A?
+
+        // bottom left
+        vertices.push_back({float3(s.rect.topLeft.x, s.rect.bottomRight.y, 0.0), toFloat4(s.color), float2(uv.topLeft.x, uv.bottomRight.y)});
+
+        // top left
+        vertices.push_back({float3(s.rect.topLeft.x, s.rect.topLeft.y, 0.0), toFloat4(s.color), float2(uv.topLeft.x, uv.topLeft.y)});
+
+        // top right
+        vertices.push_back({float3(s.rect.bottomRight.x, s.rect.topLeft.y, 0.0), toFloat4(s.color), float2(uv.bottomRight.x, uv.topLeft.y)});
+
+        // bottom right
+        vertices.push_back({float3(s.rect.bottomRight.x, s.rect.bottomRight.y, 0.0), toFloat4(s.color), float2(uv.bottomRight.x, uv.bottomRight.y)});
+
+    }
+
+
+}
+
+void Surface::getIndices(std::vector<Uint32>& indices, Uint32& offset) const
+{
+    for ([[maybe_unused]] const Quad& s : quads)
+    {
+        // add 6 indices
+        // bottomleft, topright, topleft
+        indices.push_back(offset+0);
+        indices.push_back(offset+1);
+        indices.push_back(offset+2);
+
+        // bottomleft, bottomright, topright
+        indices.push_back(offset+0);
+        indices.push_back(offset+2);
+        indices.push_back(offset+3);
+        offset += 4;
+    }
+}
+
+
   bool GameApp::InitializeDiligentEngine(HWND hWnd)
   {
     SwapChainDesc SCDesc;
@@ -90,20 +155,20 @@ constexpr Rect2D getCharacterUVs(char c)
     m_engineFactory = engineFactory;
     return true;
   }
+
   void GameApp::BuildUI()
   {
 
-    std::string str("Hello World! Bananas - taasty");
+    Surface surface;
+    surface.text = "Hello World!";
+    surface.createQuads();
+    m_surfaces.push_back(surface);
 
-    float left = 200;
-    float top = 200;
-    float width = 24;
-    float height = 40; // TODO 6x32?
-    float spacing = 0;
-    for (const auto ch : str) {
-      m_surfaces.push_back({ { { left, top }, { left + width, top + height } }, { 255, 255, 255, 255 }, ch, "" });
-      left += width + spacing;
-    }
+    Surface surface2;
+    surface2.rect = {{0, 0}, {100, 100}};
+    surface2.backgroundColor = {255, 0, 0, 255};
+    surface2.createQuads();
+    m_surfaces.push_back(surface2);
 
 
   }
@@ -235,44 +300,12 @@ constexpr Rect2D getCharacterUVs(char c)
 
   void GameApp::CreateVertexBuffer()
   {
-        struct Vertex
-        {
-            float3 pos;
-            float4 color;
-            float2 uv;
-        };
-  
+
         std::vector<Vertex> vertices;
         for (const auto& s : m_surfaces)
         {
-            // add vertices for quad with texture coordinates
-            // u = horizontal left->right 
-            // v = vertical bottom->top
-
-            // winding order should be clockwise to get a front-facing triangles
-            const Rect2D uv = s.ch != 0 ? getCharacterUVs(s.ch) : Rect2D {{0, 0}, {1, 1}};
-            // auto charUV = getCharacterUVs(); // should be A?
-
-            // bottom left
-            vertices.push_back({float3(s.rect.topLeft.x, s.rect.bottomRight.y, 0.0), toFloat4(s.color), float2(uv.topLeft.x, uv.bottomRight.y)});
-
-            // top left
-            vertices.push_back({float3(s.rect.topLeft.x, s.rect.topLeft.y, 0.0), toFloat4(s.color), float2(uv.topLeft.x, uv.topLeft.y)});
-
-            // top right
-            vertices.push_back({float3(s.rect.bottomRight.x, s.rect.topLeft.y, 0.0), toFloat4(s.color), float2(uv.bottomRight.x, uv.topLeft.y)});
-
-            // bottom right
-            vertices.push_back({float3(s.rect.bottomRight.x, s.rect.bottomRight.y, 0.0), toFloat4(s.color), float2(uv.bottomRight.x, uv.bottomRight.y)});
-
-
+          s.getVertices(vertices);
         }
-
-        // for (Vertex& vertex : vertices)
-        // {
-        //     vertex.uv.u + 0.1f;
-        //     vertex.uv.v = vertex.uv.v * 0.5f;
-        // }
 
         Uint64 dataSize  = sizeof(vertices[0]) * vertices.size();
         BufferDesc vertBufferDesc;
@@ -290,29 +323,14 @@ constexpr Rect2D getCharacterUVs(char c)
 
   void GameApp::CreateIndexBuffer()
   {
-      // Uint32 indices[] = 
-      // {
-      //   0, 1, 3, 0, 2, 3
-      // };
 
       uint32_t offset = 0;
-      std::vector<Uint32> indices;
-      for ([[maybe_unused]] const auto& rect : m_surfaces)
+      for (const auto& surf : m_surfaces)
       {
-        // add 6 indices
-        // bottomleft, topright, topleft
-        indices.push_back(offset+0);
-        indices.push_back(offset+1);
-        indices.push_back(offset+2);
-
-        // bottomleft, bottomright, topright
-        indices.push_back(offset+0);
-        indices.push_back(offset+2);
-        indices.push_back(offset+3);
-        offset += 4;
+        surf.getIndices(m_indices, offset);
       }
 
-      Uint64 dataSize  = sizeof(indices[0]) * indices.size();
+      Uint64 dataSize  = sizeof(m_indices[0]) * m_indices.size();
 
       BufferDesc indexBufferDesc;
       indexBufferDesc.Name = "Triangle index buffer";
@@ -321,7 +339,7 @@ constexpr Rect2D getCharacterUVs(char c)
       indexBufferDesc.Size = dataSize;
 
       BufferData indexBufferData;
-      indexBufferData.pData = indices.data();
+      indexBufferData.pData = m_indices.data();
       indexBufferData.DataSize = dataSize;
 
       m_pDevice->CreateBuffer(indexBufferDesc, &indexBufferData, &m_triangleIndexBuffer);
@@ -374,7 +392,7 @@ constexpr Rect2D getCharacterUVs(char c)
 
         DrawIndexedAttribs drawAttrs;
         drawAttrs.IndexType = VT_UINT32;
-        drawAttrs.NumIndices = static_cast<int>(m_surfaces.size()) * 6; // Render 6 vertices
+        drawAttrs.NumIndices = static_cast<uint32_t>(m_indices.size());
         drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
         m_pImmediateContext->DrawIndexed(drawAttrs);
   }
