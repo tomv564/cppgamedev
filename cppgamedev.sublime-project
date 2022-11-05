@@ -1,0 +1,54 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+			"folder_exclude_patterns": [".cache"]
+		}
+	],
+	"settings":
+	{
+		"LSP":
+		{
+			"clangd":
+			{
+				"enabled": true,
+			},
+		},
+		"cmake":
+		{
+			"build_folder": "$folder/build",
+			"command_line_overrides": 
+			{
+				"CMAKE_BUILD_TYPE": "RelWithDebugInfo",
+			},		
+		},
+
+	},
+	"build_systems":
+	[
+		{
+			"name": "cppgamedev",
+			"variants":
+			[
+				{
+					"name": "CMake generate (default)",
+					"shell_cmd": "cmake -S . -B ./build",
+				},
+				{
+					"name": "Build game (RelWithDebInfo)",
+					"shell_cmd": "cmake --build . --target=game -- /p:configuration=RelWithDebInfo",
+					// "syntax": "Packages/CMakeBuilder/Syntax/Visual_Studio.sublime-syntax",
+					"working_dir": "$folder/build",
+					"file_regex": "^  (.+)\\((\\d+)\\)(): ((?:fatal )?(?:error|warning) \\w+\\d\\d\\d\\d: .*) \\[.*$",
+				},
+				{
+					"name": "Run game (RelWithDebInfo)",
+					"shell_cmd": "C:\\Users\\Tom\\Projects\\cppgamedev\\build\\src\\RelWithDebInfo\\game.exe",
+					"working_dir": "$folder/assets"
+				}
+
+			]
+		},
+	],
+}

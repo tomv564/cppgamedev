@@ -12,22 +12,32 @@ Input
 
 
 
-Strings on Surface instead of chars
-
-
-Immediate-mode text
-
 
 Fix renderdoc / graphics tools compat?
 https://www.reddit.com/r/opengl/comments/ws20gv/exe_runs_normally_but_crashes_with_render_doc/
 
 
+
+### Drawing per surface
+
+
+Static buffers 
+dynamic draw 
+
+
+Per-surface textures
 blend texture with color
 deal with texture not being used?
 
 
+## DONE
+
+
 ### Quad rendering & Shader cleanup
 
+
+Strings on Surface instead of chars
+Immediate-mode text
 Extract shaders
 Immediate-mode rectangle
 With colors

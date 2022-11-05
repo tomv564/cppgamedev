@@ -72,7 +72,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int c
   g_pTheApp->CreatePipelineState();
   g_pTheApp->CreateVertexBuffer();
   g_pTheApp->CreateIndexBuffer();
-  g_pTheApp->LoadTexture();
+  g_pTheApp->LoadTextures();
   
   ShowWindow(hwnd, SW_SHOWDEFAULT);
 

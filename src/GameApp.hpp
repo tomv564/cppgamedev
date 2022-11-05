@@ -1,7 +1,6 @@
 
 // DiligentEngine needs
 
-#include <vector>
 #define NOMINMAX 1
 
 #ifndef PLATFORM_WIN32
@@ -23,6 +22,8 @@
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/SwapChain.h"
 // #include <DeviceContext.h>
 // #include <SwapChain.h>
+#include <vector>
+
 
 using namespace Diligent;
 
@@ -34,22 +35,22 @@ using namespace Diligent;
 
 struct Point2D
 {
-  float x;
-  float y;
+    float x;
+    float y;
 };
 
 struct Color
 {
-  int r;
-  int g;
-  int b;
-  int a;
+    int r;
+    int g;
+    int b;
+    int a;
 };
 
 struct Rect2D
 {
-  Point2D topLeft;
-  Point2D bottomRight;  
+    Point2D topLeft;
+    Point2D bottomRight;  
 };
 
 
@@ -62,27 +63,30 @@ struct Vertex
 
 struct Quad
 {
-  Rect2D rect;
-  Color color;
-  char ch;
-  std::string texture;
+    Rect2D rect;
+    Color color;
+    char ch;
+    std::string texture;
 };
 
 class Surface
 {
 
 public:
-  Rect2D rect;
-  Color backgroundColor;
-  std::string text;
-  std::string texture;
+    Rect2D rect;
+    Color backgroundColor;
+    std::string text;
+    std::string texture;
 
-  void getIndices(std::vector<Uint32>& indices, Uint32& offset) const;
-  void getVertices(std::vector<Vertex>& vertices) const;
-  void createQuads();
+    void getIndices(std::vector<Uint32>& indices, Uint32& offset) const;
+    void getVertices(std::vector<Vertex>& vertices) const;
+
+    bool getMesh(std::vector<Vertex>& vertices, std::vector<Uint32>& indices) const;
+
+    void createQuads();
 
 private:
-  std::vector<Quad> quads;
+    std::vector<Quad> quads;
 
 };
 
@@ -96,11 +100,11 @@ public:
   void CreatePipelineState();
   void CreateVertexBuffer();
   void CreateIndexBuffer();
-  void LoadTexture();
+  void LoadTextures();
   void Render();
   void Present();
   
-  private:
+private:
   RefCntAutoPtr<IRenderDevice> m_pDevice;
   RefCntAutoPtr<IEngineFactory> m_engineFactory;
   RefCntAutoPtr<IDeviceContext> m_pImmediateContext;
@@ -109,9 +113,11 @@ public:
   RefCntAutoPtr<IShaderResourceBinding> m_pSRB;
   RefCntAutoPtr<IBuffer> m_triangleVertexBuffer;
   RefCntAutoPtr<IBuffer> m_triangleIndexBuffer;
+  RefCntAutoPtr<ITextureView> m_characterTextureSRV;
   RefCntAutoPtr<ITextureView> m_textureSRV;
 
   std::vector<Surface> m_surfaces;
+  std::vector<Vertex> m_vertices;
   std::vector<Uint32> m_indices;
 
   RefCntAutoPtr<IBuffer> m_vertexShaderConstants;
