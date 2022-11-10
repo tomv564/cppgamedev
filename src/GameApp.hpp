@@ -1,6 +1,7 @@
 
 // DiligentEngine needs
 
+#include <memory>
 #define NOMINMAX 1
 
 #ifndef PLATFORM_WIN32
@@ -91,35 +92,88 @@ private:
 };
 
 
+struct UIRenderBatch
+{
+    // RefCntAutoPtr<IPipelineState> m_pPSO;
+    // RefCntAutoPtr<IPipelineState> m_pPSO2;
+    // RefCntAutoPtr<IShaderResourceBinding> m_pSRB;
+    // RefCntAutoPtr<IShaderResourceBinding> m_pSRB2;
+
+
+    RefCntAutoPtr<IBuffer> vertexBuffer;
+    RefCntAutoPtr<IBuffer> indexBuffer;
+
+
+};
+
+class UIRenderer
+{
+
+public:
+    UIRenderer(RefCntAutoPtr<IRenderDevice>& renderDevice, RefCntAutoPtr<IDeviceContext>& deviceContext, RefCntAutoPtr<ISwapChain>& swapChain, RefCntAutoPtr<IEngineFactory>& engineFactory);
+    void Render(const Surface& surface);
+
+    void setTextureAtlas(RefCntAutoPtr<ITexture>& texture);
+    void setCharacterAtlas(RefCntAutoPtr<ITexture>& texture);
+
+private:
+    // per 
+    RefCntAutoPtr<IRenderDevice> m_pDevice;
+    RefCntAutoPtr<ISwapChain> m_pSwapChain;
+
+    RefCntAutoPtr<IEngineFactory> m_engineFactory;
+    RefCntAutoPtr<IDeviceContext> m_deviceContext;
+
+
+
+    // per batch/job  
+    RefCntAutoPtr<IPipelineState> m_pPSO;
+    RefCntAutoPtr<IPipelineState> m_pPSO2;
+    
+    RefCntAutoPtr<IShaderResourceBinding> m_pSRB;
+
+    RefCntAutoPtr<ITextureView> m_characterTextureSRV;
+    RefCntAutoPtr<ITextureView> m_textureSRV;
+
+    RefCntAutoPtr<IBuffer> m_vertexShaderConstants;
+    float4x4 m_worldViewProjectionMatrix;
+
+};
 
 class GameApp
 {
 public:
-  bool InitializeDiligentEngine(HWND hWnd);
-  void BuildUI();
-  void CreatePipelineState();
-  void CreateVertexBuffer();
-  void CreateIndexBuffer();
-  void LoadTextures();
-  void Render();
-  void Present();
+    bool InitializeDiligentEngine(HWND hWnd);
+    void InitializeUIRenderer();
+    void BuildUI();
+    void LoadTextures();
+    void Render();
+    void Present();
   
 private:
-  RefCntAutoPtr<IRenderDevice> m_pDevice;
-  RefCntAutoPtr<IEngineFactory> m_engineFactory;
-  RefCntAutoPtr<IDeviceContext> m_pImmediateContext;
-  RefCntAutoPtr<ISwapChain> m_pSwapChain;
-  RefCntAutoPtr<IPipelineState> m_pPSO;
-  RefCntAutoPtr<IShaderResourceBinding> m_pSRB;
-  RefCntAutoPtr<IBuffer> m_triangleVertexBuffer;
-  RefCntAutoPtr<IBuffer> m_triangleIndexBuffer;
-  RefCntAutoPtr<ITextureView> m_characterTextureSRV;
-  RefCntAutoPtr<ITextureView> m_textureSRV;
+    RefCntAutoPtr<IRenderDevice> m_pDevice;
+    RefCntAutoPtr<IEngineFactory> m_engineFactory;
 
-  std::vector<Surface> m_surfaces;
-  std::vector<Vertex> m_vertices;
-  std::vector<Uint32> m_indices;
 
-  RefCntAutoPtr<IBuffer> m_vertexShaderConstants;
-  float4x4 m_worldViewProjectionMatrix;
+    std::unique_ptr<UIRenderer> m_uiRenderer;
+
+    RefCntAutoPtr<IDeviceContext> m_pImmediateContext;
+    RefCntAutoPtr<ISwapChain> m_pSwapChain;
+
+    RefCntAutoPtr<IPipelineState> m_pPSO;
+    RefCntAutoPtr<IPipelineState> m_pPSO2;
+    RefCntAutoPtr<IShaderResourceBinding> m_pSRB;
+
+
+    RefCntAutoPtr<IBuffer> m_triangleVertexBuffer;
+    RefCntAutoPtr<IBuffer> m_triangleIndexBuffer;
+    RefCntAutoPtr<ITextureView> m_characterTextureSRV;
+    RefCntAutoPtr<ITextureView> m_textureSRV;
+
+    std::vector<Surface> m_surfaces;
+    std::vector<Vertex> m_vertices;
+    std::vector<Uint32> m_indices;
+
+    RefCntAutoPtr<IBuffer> m_vertexShaderConstants;
+    float4x4 m_worldViewProjectionMatrix;
 };

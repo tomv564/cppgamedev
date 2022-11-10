@@ -67,12 +67,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int c
     return 0;
   }
 
-  g_pTheApp->BuildUI();
-
-  g_pTheApp->CreatePipelineState();
-  g_pTheApp->CreateVertexBuffer();
-  g_pTheApp->CreateIndexBuffer();
+  g_pTheApp->InitializeUIRenderer();  
   g_pTheApp->LoadTextures();
+  g_pTheApp->BuildUI();
   
   ShowWindow(hwnd, SW_SHOWDEFAULT);
 

@@ -1,16 +1,16 @@
-
-#include <numeric>
-#include <tuple>
 #define NOMINMAX 1
 
 // DiligentEngine needs
-#include <stdint.h>
 #ifndef PLATFORM_WIN32
 #    define PLATFORM_WIN32 1
 #endif
 
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdlib>
 #include "GameApp.hpp"
+
+
+// TODO ensure include path is known to clangd
 
 #include "DiligentEngine/DiligentCore/Common/interface/RefCntAutoPtr.hpp"
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/InputLayout.h"
@@ -31,6 +31,9 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
+#include <memory>
+#include <numeric>
+#include <tuple>
 
 using namespace Diligent;
 
@@ -144,62 +147,12 @@ bool Surface::getMesh(std::vector<Vertex>& vertices, std::vector<Uint32>& indice
     return true;
 }
 
-bool GameApp::InitializeDiligentEngine(HWND hWnd)
-{
-    SwapChainDesc SCDesc;
 
-    // DX12 only for now.
-    EngineD3D12CreateInfo EngineCI;
-
-#    if ENGINE_DLL
-                // Load the dll and import GetEngineFactoryD3D12() function
-    auto GetEngineFactoryD3D12 = LoadGraphicsEngineD3D12();
-#    endif
-
-    auto* engineFactory = GetEngineFactoryD3D12();
-    engineFactory->CreateDeviceAndContextsD3D12(EngineCI, &m_pDevice, &m_pImmediateContext);
-    Win32NativeWindow Window{hWnd};
-    engineFactory->CreateSwapChainD3D12(m_pDevice, m_pImmediateContext, SCDesc, FullScreenModeDesc{}, Window, &m_pSwapChain);
-    
-    m_engineFactory = engineFactory;
-    return true;
-}
-
-void GameApp::BuildUI()
-{
-
-    Surface surface;
-    surface.text = "Hello World!";
-    surface.createQuads();
-    m_surfaces.push_back(surface);
-
-    Surface surface2;
-    surface2.rect = {{0, 0}, {100, 100}};
-    surface2.backgroundColor = {255, 0, 0, 255};
-    surface2.createQuads();
-    m_surfaces.push_back(surface2);
-
-
-    // TODO: for ui renderer.
-    std::vector<Vertex> vertices;
-    std::vector<Uint32> indices;
-    Uint32 offset = 0;
-    for (const Surface& s : m_surfaces)
-    {
-        s.getMesh(vertices, indices);
-
-        m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
-        for (const Uint32 index : indices)
-            m_indices.push_back(offset + index);
-
-        offset += m_vertices.size();
-        vertices.clear();
-        indices.clear();
-    }
-
-}
-
-void GameApp::CreatePipelineState()
+UIRenderer::UIRenderer(RefCntAutoPtr<IRenderDevice>& renderDevice, RefCntAutoPtr<IDeviceContext>& deviceContext,RefCntAutoPtr<ISwapChain>& swapChain, RefCntAutoPtr<IEngineFactory>& engineFactory)
+: m_pDevice(renderDevice)
+, m_deviceContext(deviceContext)
+, m_pSwapChain(swapChain)
+, m_engineFactory(engineFactory)
 {
     // Pipeline state object encompasses configuration of all GPU stages
     GraphicsPipelineStateCreateInfo PSOCreateInfo;
@@ -289,7 +242,7 @@ void GameApp::CreatePipelineState()
     // to change on a per-instance basis
     ShaderResourceVariableDesc Vars[] = 
     {
-        {SHADER_TYPE_PIXEL, "g_Texture", SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE}
+        {SHADER_TYPE_PIXEL, "g_Texture", SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC}
     };
 
     PSOCreateInfo.PSODesc.ResourceLayout.Variables    = Vars;
@@ -322,43 +275,136 @@ void GameApp::CreatePipelineState()
 
     // Create a shader resource binding object and bind all static resources in it
     m_pPSO->CreateShaderResourceBinding(&m_pSRB, true);
+}
+
+bool GameApp::InitializeDiligentEngine(HWND hWnd)
+{
+    SwapChainDesc SCDesc;
+
+    // DX12 only for now.
+    EngineD3D12CreateInfo EngineCI;
+
+#    if ENGINE_DLL
+                // Load the dll and import GetEngineFactoryD3D12() function
+    auto GetEngineFactoryD3D12 = LoadGraphicsEngineD3D12();
+#    endif
+
+    auto* engineFactory = GetEngineFactoryD3D12();
+    engineFactory->CreateDeviceAndContextsD3D12(EngineCI, &m_pDevice, &m_pImmediateContext);
+    Win32NativeWindow Window{hWnd};
+    engineFactory->CreateSwapChainD3D12(m_pDevice, m_pImmediateContext, SCDesc, FullScreenModeDesc{}, Window, &m_pSwapChain);
+    
+    m_engineFactory = engineFactory;
+    return true;
+}
+
+void GameApp::InitializeUIRenderer()
+{
+    m_uiRenderer = std::make_unique<UIRenderer>(m_pDevice, m_pImmediateContext, m_pSwapChain, m_engineFactory);
+}
+
+void GameApp::BuildUI()
+{
+
+    Surface surface;
+    surface.text = "Hello World!";
+    surface.createQuads();
+    m_surfaces.push_back(surface);
+
+    Surface surface2;
+    surface2.rect = {{0, 0}, {100, 100}};
+    surface2.backgroundColor = {255, 0, 0, 255};
+    surface2.createQuads();
+    m_surfaces.push_back(surface2);
 
 }
 
-void GameApp::CreateVertexBuffer()
+void UIRenderer::Render(const Surface& surface)
 {
 
-    Uint64 dataSize  = sizeof(m_vertices[0]) * m_vertices.size();
-    BufferDesc vertBufferDesc;
-    vertBufferDesc.Name = "Triangle vertex buffer";
-    vertBufferDesc.Usage = USAGE_IMMUTABLE;
-    vertBufferDesc.BindFlags = BIND_VERTEX_BUFFER;
-    vertBufferDesc.Size = dataSize; //sizeof(triangleVertices);
+    // TODO: separate mesh & shader arguments from actual drawing.
 
-    BufferData vertBufferData;  
-    vertBufferData.pData = m_vertices.data();
-    vertBufferData.DataSize = dataSize; //sizeof(triangleVertices);
+    // TODO: use members instead.
+    std::vector<Vertex> vertices;
+    std::vector<Uint32> indices;
+    // Uint32 offset = 0;
 
-    m_pDevice->CreateBuffer(vertBufferDesc, &vertBufferData, &m_triangleVertexBuffer);
-}
+    // TODO: check result?
+    surface.getMesh(vertices, indices);
 
-void GameApp::CreateIndexBuffer()
-{
+    // vertices.clear();
+    // indices.clear();
 
-    Uint64 dataSize  = sizeof(m_indices[0]) * m_indices.size();
+    UIRenderBatch batch;
 
-    BufferDesc indexBufferDesc;
-    indexBufferDesc.Name = "Triangle index buffer";
-    indexBufferDesc.Usage = USAGE_IMMUTABLE;
-    indexBufferDesc.BindFlags = BIND_INDEX_BUFFER;
-    indexBufferDesc.Size = dataSize;
+    // CreateVertexBuffer
+    {    
+        Uint64 dataSize  = sizeof(vertices[0]) * vertices.size();
+        
+        BufferDesc vertBufferDesc;
+        vertBufferDesc.Name = "Triangle vertex buffer";
+        vertBufferDesc.Usage = USAGE_IMMUTABLE;
+        vertBufferDesc.BindFlags = BIND_VERTEX_BUFFER;
+        vertBufferDesc.Size = dataSize; //sizeof(triangleVertices);
 
-    BufferData indexBufferData;
-    indexBufferData.pData = m_indices.data();
-    indexBufferData.DataSize = dataSize;
+        BufferData vertBufferData;  
+        vertBufferData.pData = vertices.data();
+        vertBufferData.DataSize = dataSize; //sizeof(triangleVertices);
 
-    m_pDevice->CreateBuffer(indexBufferDesc, &indexBufferData, &m_triangleIndexBuffer);
+        m_pDevice->CreateBuffer(vertBufferDesc, &vertBufferData, &batch.vertexBuffer);
+    }
 
+
+    // CreateIndexBuffer
+    {
+        Uint64 dataSize  = sizeof(indices[0]) * indices.size();
+
+        BufferDesc indexBufferDesc;
+        indexBufferDesc.Name = "Triangle index buffer";
+        indexBufferDesc.Usage = USAGE_IMMUTABLE;
+        indexBufferDesc.BindFlags = BIND_INDEX_BUFFER;
+        indexBufferDesc.Size = dataSize;
+
+        BufferData indexBufferData;
+        indexBufferData.pData = indices.data();
+        indexBufferData.DataSize = dataSize;
+
+        m_pDevice->CreateBuffer(indexBufferDesc, &indexBufferData, &batch.indexBuffer);
+    }
+
+
+    // actually render the batch.  
+
+    {
+        // Map the buffer and write current world-view-projection matrix
+        MapHelper<float4x4> CBConstants(m_deviceContext, m_vertexShaderConstants, MAP_WRITE, MAP_FLAG_DISCARD);
+        *CBConstants = m_worldViewProjectionMatrix.Transpose();
+    }
+
+
+    const Uint64 offset = 0;
+    IBuffer* pBuffs[] = {batch.vertexBuffer};
+    m_deviceContext->SetVertexBuffers(0, 1, pBuffs, &offset, RESOURCE_STATE_TRANSITION_MODE_TRANSITION, SET_VERTEX_BUFFERS_FLAG_RESET);
+    m_deviceContext->SetIndexBuffer(batch.indexBuffer, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    // Set the pipeline state in the immediate context
+    m_deviceContext->SetPipelineState(m_pPSO);
+
+
+    if (surface.text.empty())
+        m_pSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_textureSRV);
+    else
+        m_pSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_characterTextureSRV);
+
+    // Commit shader resources. RESOURCE_STATE_TRANSITION_MODE_TRANSITION mode
+    // makes sure that resources are transitioned to required states.
+    m_deviceContext->CommitShaderResources(m_pSRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+
+    DrawIndexedAttribs drawAttrs;
+    drawAttrs.IndexType = VT_UINT32;
+    drawAttrs.NumIndices = static_cast<uint32_t>(indices.size());
+    drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
+    m_deviceContext->DrawIndexed(drawAttrs);
 }
 
 void GameApp::LoadTextures()
@@ -366,19 +412,22 @@ void GameApp::LoadTextures()
     TextureLoadInfo loadInfo;
     loadInfo.IsSRGB = true;
     RefCntAutoPtr<ITexture> texture;
-    CreateTextureFromFile("characters_on_white.png", loadInfo, m_pDevice, &texture);
-
-    m_characterTextureSRV = texture->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
-
-    //m_pSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_CharTexture")->Set(m_textureSRV);
-
-
+   
     CreateTextureFromFile("white.png", loadInfo, m_pDevice, &texture);
+    m_uiRenderer->setTextureAtlas(texture);
 
+    CreateTextureFromFile("characters_on_white.png", loadInfo, m_pDevice, &texture);
+    m_uiRenderer->setCharacterAtlas(texture);
+}
+
+void UIRenderer::setTextureAtlas(RefCntAutoPtr<ITexture>& texture)
+{
     m_textureSRV = texture->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
+}
 
-    m_pSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_textureSRV);
-
+void UIRenderer::setCharacterAtlas(RefCntAutoPtr<ITexture>& texture)
+{
+    m_characterTextureSRV = texture->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE);
 }
 
 void GameApp::Render()
@@ -396,49 +445,8 @@ void GameApp::Render()
     m_pImmediateContext->ClearRenderTarget(pRTV, ClearColor, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     m_pImmediateContext->ClearDepthStencil(pDSV, CLEAR_DEPTH_FLAG, 1.f, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-    {
-        // Map the buffer and write current world-view-projection matrix
-        MapHelper<float4x4> CBConstants(m_pImmediateContext, m_vertexShaderConstants, MAP_WRITE, MAP_FLAG_DISCARD);
-        *CBConstants = m_worldViewProjectionMatrix.Transpose();
-    }
-
-    const Uint64 offset = 0;
-    IBuffer* pBuffs[] = {m_triangleVertexBuffer};
-    m_pImmediateContext->SetVertexBuffers(0, 1, pBuffs, &offset, RESOURCE_STATE_TRANSITION_MODE_TRANSITION, SET_VERTEX_BUFFERS_FLAG_RESET);
-    m_pImmediateContext->SetIndexBuffer(m_triangleIndexBuffer, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    // Set the pipeline state in the immediate context
-    m_pImmediateContext->SetPipelineState(m_pPSO);
-
-    // Commit shader resources. RESOURCE_STATE_TRANSITION_MODE_TRANSITION mode
-    // makes sure that resources are transitioned to required states.
-    m_pImmediateContext->CommitShaderResources(m_pSRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-
-
-
-    // m_surfaceRenderer.Render(m_pImmediateContext)
-
     for (const Surface& surf : m_surfaces)
-    {
-
-        // draw regular surface
-
-        DrawIndexedAttribs drawAttrs;
-        drawAttrs.IndexType = VT_UINT32;
-        drawAttrs.NumIndices = static_cast<uint32_t>(m_indices.size());
-        drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
-        m_pImmediateContext->DrawIndexed(drawAttrs);
-
-        // draw text 
-
-        drawAttrs.IndexType = VT_UINT32;
-        drawAttrs.NumIndices = static_cast<uint32_t>(m_indices.size());
-        drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
-        m_pImmediateContext->DrawIndexed(drawAttrs);
-
-
-  }
-
-
+        m_uiRenderer->Render(surf);
 
 }
 
