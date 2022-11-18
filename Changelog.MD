@@ -11,9 +11,18 @@ Make a button:
 Input
 
 
+### Fix CI
+
+DiligentEngine not checked out
 
 
-Fix renderdoc / graphics tools compat?
+
+### Fix renderdoc / graphics tools
+
+try running with -mode d3d11 or -mode gl/vk/d3d12
+C:\Users\Tom\Projects\cppgamedev\build\src\DiligentEngine\DiligentSamples\Tutorials\Tutorial01_HelloTriangle\RelWithDebInfo\Tutorial01_HelloTriangle.exe
+works!
+HelloCube fails with d3d12, works with d3d11 and gl! This must be the difference??
 https://www.reddit.com/r/opengl/comments/ws20gv/exe_runs_normally_but_crashes_with_render_doc/
 
 
@@ -30,7 +39,13 @@ blend texture with color
 deal with texture not being used?
 
 
+
+
 ## DONE
+
+
+### Support more rendering backends
+
 
 
 ### Quad rendering & Shader cleanup
@@ -67,6 +82,7 @@ cd DiligentEngine
 git checkout v2.5.2
 git submodule update --init
 
+cd src && git clone --branch v2.5.2 --depth 1 --recurse-submodules git@github.com:DiligentGraphics/DiligentEngine.git
 TODO:
 
 Following the tutorial in 

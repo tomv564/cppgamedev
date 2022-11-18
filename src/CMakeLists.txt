@@ -23,10 +23,16 @@ target_link_libraries(
 target_compile_definitions(game PRIVATE ENGINE_DLL=1)
 #target_link_libraries(game PRIVATE Diligent-BuildSettings)
 
-#if(D3D12_SUPPORTED)
-target_link_libraries(game PRIVATE Diligent-GraphicsEngineD3D12-shared)
-#endif()
-target_link_libraries(game PRIVATE Diligent-TextureLoader)
+
+get_supported_backends(ENGINE_LIBRARIES)
+
+target_link_libraries(
+    game
+    PRIVATE
+        Diligent-TextureLoader
+    PUBLIC
+        ${ENGINE_LIBRARIES}
+    )
 
 set_target_properties(game PROPERTIES 
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/assets"

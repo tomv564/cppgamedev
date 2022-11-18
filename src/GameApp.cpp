@@ -22,6 +22,7 @@
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/ShaderResourceVariable.h"
 #include "DiligentEngine/DiligentTools/TextureLoader/interface/TextureUtilities.h"
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h"
+#include "DiligentEngine/DiligentCore/Graphics/GraphicsEngineD3D11/interface/EngineFactoryD3D11.h"
 // #include <EngineFactoryD3D12.h>
 
 // #include <RenderDevice.h>
@@ -281,20 +282,50 @@ bool GameApp::InitializeDiligentEngine(HWND hWnd)
 {
     SwapChainDesc SCDesc;
 
+    RENDER_DEVICE_TYPE deviceType = Diligent::RENDER_DEVICE_TYPE_D3D11;
+    Win32NativeWindow Window{hWnd};
+
+    switch (deviceType) 
+    {
+        case Diligent::RENDER_DEVICE_TYPE_D3D11:
+        {
+
+        #    if ENGINE_DLL
+                        // Load the dll and import GetEngineFactoryD3D12() function
+            auto GetEngineFactoryD3D11 = LoadGraphicsEngineD3D11();
+        #    endif
+
+            EngineD3D11CreateInfo EngineCI;
+            EngineCI.GraphicsAPIVersion = {11, 0};
+
+            auto* engineFactory = GetEngineFactoryD3D11();
+            engineFactory->CreateDeviceAndContextsD3D11(EngineCI, &m_pDevice, &m_pImmediateContext);
+            engineFactory->CreateSwapChainD3D11(m_pDevice, m_pImmediateContext, SCDesc, FullScreenModeDesc{}, Window, &m_pSwapChain);
+            
+            m_engineFactory = engineFactory;            
+            break;
+        }
+        case Diligent::RENDER_DEVICE_TYPE_D3D12:
+        {
+        #    if ENGINE_DLL
+                        // Load the dll and import GetEngineFactoryD3D12() function
+            auto GetEngineFactoryD3D12 = LoadGraphicsEngineD3D12();
+        #    endif
+
+            EngineD3D12CreateInfo EngineCI;
+            EngineCI.GraphicsAPIVersion = {11, 0};
+            
+            auto* engineFactory = GetEngineFactoryD3D12();
+            engineFactory->CreateDeviceAndContextsD3D12(EngineCI, &m_pDevice, &m_pImmediateContext);
+            engineFactory->CreateSwapChainD3D12(m_pDevice, m_pImmediateContext, SCDesc, FullScreenModeDesc{}, Window, &m_pSwapChain);
+            
+            m_engineFactory = engineFactory;
+            break;
+        }
+    }
     // DX12 only for now.
     EngineD3D12CreateInfo EngineCI;
 
-#    if ENGINE_DLL
-                // Load the dll and import GetEngineFactoryD3D12() function
-    auto GetEngineFactoryD3D12 = LoadGraphicsEngineD3D12();
-#    endif
-
-    auto* engineFactory = GetEngineFactoryD3D12();
-    engineFactory->CreateDeviceAndContextsD3D12(EngineCI, &m_pDevice, &m_pImmediateContext);
-    Win32NativeWindow Window{hWnd};
-    engineFactory->CreateSwapChainD3D12(m_pDevice, m_pImmediateContext, SCDesc, FullScreenModeDesc{}, Window, &m_pSwapChain);
-    
-    m_engineFactory = engineFactory;
     return true;
 }
 
