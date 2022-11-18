@@ -60,7 +60,7 @@ jobs:
     - name: Install / Configure dependencies
       shell: bash
       run: |
-        cd src && git clone --branch v2.5.2 --depth 1 --recurse-submodules git@github.com:DiligentGraphics/DiligentEngine.git && cd ..
+        cd src && git clone --branch v2.5.2 --depth 1 --recurse-submodules https://github.com/DiligentGraphics/DiligentEngine.git && cd ..
         if [ "$RUNNER_OS" == "Linux" ]; then
           echo "Ubuntu - Fix Conan Path"
           sudo update-alternatives --install /usr/bin/conan conan /home/runner/.local/bin/conan 10
