@@ -78,8 +78,8 @@ void Surface::createQuads()
 
     if (!text.empty())
     {
-        float left = 200;
-        float top = 200;
+        float left = rect.topLeft.x;
+        float top = rect.topLeft.y;
         float width = 24;
         float height = 40; // TODO 6x32?
         float spacing = 0;
@@ -336,15 +336,19 @@ void GameApp::InitializeUIRenderer()
 
 void GameApp::BuildUI()
 {
-
+    // title
     Surface surface;
-    surface.text = "Hello World!";
+    surface.rect = {{0, 0}, { 200, 100}};
+    surface.backgroundColor = { 255, 255, 255, 255 };
+    surface.text = "Game";
     surface.createQuads();
     m_surfaces.push_back(surface);
 
+    // button
     Surface surface2;
-    surface2.rect = {{0, 0}, {100, 100}};
+    surface2.rect = {{400, 300}, {700, 400}};
     surface2.backgroundColor = {255, 0, 0, 255};
+    surface2.text = "Click to start";
     surface2.createQuads();
     m_surfaces.push_back(surface2);
 
@@ -421,21 +425,34 @@ void UIRenderer::Render(const Surface& surface)
     m_deviceContext->SetPipelineState(m_pPSO);
 
 
-    if (surface.text.empty())
-        m_pSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_textureSRV);
-    else
-        m_pSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_characterTextureSRV);
+    m_pSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_textureSRV);
 
     // Commit shader resources. RESOURCE_STATE_TRANSITION_MODE_TRANSITION mode
     // makes sure that resources are transitioned to required states.
     m_deviceContext->CommitShaderResources(m_pSRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
 
+
     DrawIndexedAttribs drawAttrs;
     drawAttrs.IndexType = VT_UINT32;
-    drawAttrs.NumIndices = static_cast<uint32_t>(indices.size());
     drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
-    m_deviceContext->DrawIndexed(drawAttrs);
+
+    // Pass one: 6 indices for the first quad.
+    // drawAttrs.NumIndices = 6;
+    // m_deviceContext->DrawIndexed(drawAttrs);
+
+    // Pass two: remaining indices for text
+    if (!surface.text.empty())
+    {
+        m_pSRB->GetVariableByName(SHADER_TYPE_PIXEL, "g_Texture")->Set(m_characterTextureSRV);
+
+        m_deviceContext->CommitShaderResources(m_pSRB, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+        drawAttrs.FirstIndexLocation = 6;
+        drawAttrs.NumIndices = static_cast<uint32_t>(indices.size()) - 6;
+        m_deviceContext->DrawIndexed(drawAttrs);
+    }
+
 }
 
 void GameApp::LoadTextures()

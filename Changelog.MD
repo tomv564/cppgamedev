@@ -2,13 +2,17 @@
 ### TODO
 
 
+More UI features:
+https://github.com/nxp-imx/gtec-demo-framework/blob/master/Doc/FslSimpleUI.md
+
 Make a dialog
 Layouting
 
 
 
 Make a button:
-Input
+Input: https://gainput.johanneskuhlmann.de/
+
 
 
 ### Fix CI

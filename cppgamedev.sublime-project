@@ -3,11 +3,16 @@
 	[
 		{
 			"path": ".",
-			"folder_exclude_patterns": [".cache"]
-		}
+			"folder_exclude_patterns": [".cache"],
+		},
 	],
 	"settings":
 	{
+		"MSBuildService":
+		{
+			"solution_path": "C:\\Users\\Tom\\Projects\\cppgamedev\\build\\cppgamedev.sln",
+			"configuration_name": "RelWithDebugInfo"
+		},
 		"LSP":
 		{
 			"clangd":
@@ -23,7 +28,6 @@
 				"CMAKE_BUILD_TYPE": "RelWithDebugInfo",
 			},		
 		},
-
 	},
 	"build_systems":
 	[
@@ -45,10 +49,10 @@
 				{
 					"name": "Run game (RelWithDebInfo)",
 					"shell_cmd": "C:\\Users\\Tom\\Projects\\cppgamedev\\build\\src\\RelWithDebInfo\\game.exe",
-					"working_dir": "$folder/assets"
+					"working_dir": "$folder/assets",
 				}
 
-			]
+			],
 		},
-	],
+	]
 }

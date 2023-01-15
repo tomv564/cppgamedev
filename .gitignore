@@ -4,6 +4,7 @@ build/
 out/
 cmake-build-*/
 src/DiligentEngine
+src/gainput
 
 # IDE files
 .vs/
