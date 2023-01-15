@@ -331,6 +331,7 @@ bool GameApp::InitializeDiligentEngine(HWND hWnd)
 
 void GameApp::InitializeUIRenderer()
 {
+
     m_uiRenderer = std::make_unique<UIRenderer>(m_pDevice, m_pImmediateContext, m_pSwapChain, m_engineFactory);
 }
 
@@ -351,6 +352,12 @@ void GameApp::BuildUI()
     surface2.text = "Click to start";
     surface2.createQuads();
     m_surfaces.push_back(surface2);
+
+}
+
+void GameApp::Update()
+{
+   
 
 }
 

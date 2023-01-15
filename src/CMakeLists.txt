@@ -2,9 +2,12 @@
 find_package(fmt)
 find_package(spdlog)
 find_package(docopt)
+find_package(gainput)
 
 # Generic test that uses conan libs
 add_executable(game WIN32 main.cpp GameApp.cpp)
+
+# add_subdirectory(gainput)
 
 add_subdirectory(DiligentEngine/DiligentCore)
 add_subdirectory(DiligentEngine/DiligentTools)
@@ -16,9 +19,21 @@ target_link_libraries(
   PRIVATE project_options
           project_warnings
           fmt::fmt
-          spdlog::spdlog)
+          spdlog::spdlog
+          gainput::gainput)
 #docopt::docopt
           
+
+# /Zc:__cplusplus is required to make __cplusplus accurate
+# /Zc:__cplusplus is available starting with Visual Studio 2017 version 15.7
+# (according to https://docs.microsoft.com/en-us/cpp/build/reference/zc-cplusplus)
+# That version is equivalent to _MSC_VER==1914
+# (according to https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=vs-2019)
+# CMake's ${MSVC_VERSION} is equivalent to _MSC_VER
+# (according to https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html#variable:MSVC_VERSION)
+if ((MSVC) AND (MSVC_VERSION GREATER_EQUAL 1914))
+    target_compile_options(game PUBLIC "/Zc:__cplusplus")
+endif()
 
 target_compile_definitions(game PRIVATE ENGINE_DLL=1)
 #target_link_libraries(game PRIVATE Diligent-BuildSettings)

@@ -17,7 +17,6 @@
 #include "DiligentEngine/DiligentCore/Common/interface/BasicMath.hpp"
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/RenderDevice.h"
 
-
 // #include <RenderDevice.h>
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/DeviceContext.h"
 #include "DiligentEngine/DiligentCore/Graphics/GraphicsEngine/interface/SwapChain.h"
@@ -91,7 +90,6 @@ private:
 
 };
 
-
 struct UIRenderBatch
 {
     // RefCntAutoPtr<IPipelineState> m_pPSO;
@@ -147,6 +145,7 @@ public:
     void InitializeUIRenderer();
     void BuildUI();
     void LoadTextures();
+    void Update();
     void Render();
     void Present();
   
@@ -176,4 +175,5 @@ private:
 
     RefCntAutoPtr<IBuffer> m_vertexShaderConstants;
     float4x4 m_worldViewProjectionMatrix;
+
 };

@@ -10,12 +10,21 @@
 
 #include <windows.h>
 #include "GameApp.hpp"
+#include <gainput/gainput.h>
 
 
 std::unique_ptr<GameApp> g_pTheApp;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+// Define your user buttons
+enum Button
+{
+  ButtonMenu,
+  ButtonConfirm,
+  MouseX,
+  MouseY
+};
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int cmdShow)
 {
@@ -67,6 +76,20 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int c
     return 0;
   }
 
+  // Setup Gainput
+  gainput::InputManager manager;
+  manager.SetDisplaySize(800, 600);
+  gainput::DeviceId mouseId = manager.CreateDevice<gainput::InputDeviceMouse>();
+  gainput::DeviceId keyboardId = manager.CreateDevice<gainput::InputDeviceKeyboard>();
+  gainput::DeviceId padId = manager.CreateDevice<gainput::InputDevicePad>();
+
+  gainput::InputMap map(manager);
+  map.MapBool(ButtonMenu, keyboardId, gainput::KeyEscape);
+  map.MapBool(ButtonConfirm, mouseId, gainput::MouseButtonLeft);
+  map.MapFloat(MouseX, mouseId, gainput::MouseAxisX);
+  map.MapFloat(MouseY, mouseId, gainput::MouseAxisY);
+  map.MapBool(ButtonConfirm, padId, gainput::PadButtonA);
+
   g_pTheApp->InitializeUIRenderer();  
   g_pTheApp->LoadTextures();
   g_pTheApp->BuildUI();
@@ -76,25 +99,38 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int c
   // main loop
   for (;;) {
     MSG msg = {};
+
+    manager.Update();
+
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
       if (msg.message == WM_QUIT) {
-        // Cleanup
-        /*delete gWorkloadD3D11;
-        delete gWorkloadD3D12;
-        delete gWorkloadDE;
-        SafeRelease(&gDXGIFactory);
-        timeEndPeriod(1);
-        EnableMouseInPointer(FALSE);*/
         return (int)msg.wParam;
       };
 
       TranslateMessage(&msg);
       DispatchMessage(&msg);
 
-      g_pTheApp->Render();
-      g_pTheApp->Present();
-
+      manager.HandleMessage(msg);
     }
+
+    
+    if (map.GetBoolWasDown(ButtonConfirm))
+    {
+      spdlog::info("Confirmed!!");
+    }
+
+    if (map.GetBoolWasDown(ButtonMenu)) {
+      spdlog::info("Open menu!!");
+    }
+
+    if (map.GetFloatDelta(MouseX) != 0.0f || map.GetFloatDelta(MouseY) != 0.0f)
+    {
+      spdlog::info("Mouse: %f, %f\n", map.GetFloat(MouseX), map.GetFloat(MouseY));
+    }
+    
+    g_pTheApp->Update();
+    g_pTheApp->Render();
+    g_pTheApp->Present();
   }
 }
 
