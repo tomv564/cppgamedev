@@ -3,6 +3,7 @@ find_package(fmt)
 find_package(spdlog)
 find_package(docopt)
 find_package(gainput)
+find_package(miniaudio REQUIRED)
 
 # Generic test that uses conan libs
 add_executable(game WIN32 main.cpp GameApp.cpp)
@@ -20,7 +21,8 @@ target_link_libraries(
           project_warnings
           fmt::fmt
           spdlog::spdlog
-          gainput::gainput)
+          gainput::gainput
+          miniaudio::miniaudio)
 #docopt::docopt
           
 

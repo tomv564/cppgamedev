@@ -12,6 +12,8 @@
 #include "GameApp.hpp"
 #include <gainput/gainput.h>
 
+#define MINIAUDIO_IMPLEMENTATION
+#include <miniaudio.h>
 
 std::unique_ptr<GameApp> g_pTheApp;
 
@@ -90,6 +92,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int c
   map.MapFloat(MouseY, mouseId, gainput::MouseAxisY);
   map.MapBool(ButtonConfirm, padId, gainput::PadButtonA);
 
+  // Set up audio
+  ma_result result;
+  ma_engine engine;
+
+  result = ma_engine_init(NULL, &engine);
+  if (result != MA_SUCCESS) {
+      printf("Failed to initialize audio engine.");
+      return -1;
+  }
+
+  // Set up UI
   g_pTheApp->InitializeUIRenderer();  
   g_pTheApp->LoadTextures();
   g_pTheApp->BuildUI();
@@ -117,6 +130,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int c
     if (map.GetBoolWasDown(ButtonConfirm))
     {
       spdlog::info("Confirmed!!");
+      ma_engine_play_sound(&engine, "mixkit-select-click-1109.wav", NULL);
     }
 
     if (map.GetBoolWasDown(ButtonMenu)) {
@@ -132,6 +146,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int c
     g_pTheApp->Render();
     g_pTheApp->Present();
   }
+
+
+  ma_engine_uninit(&engine);
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

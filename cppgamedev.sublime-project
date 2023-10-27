@@ -11,7 +11,7 @@
 		"MSBuildService":
 		{
 			"solution_path": "C:\\Users\\Tom\\Projects\\cppgamedev\\build\\cppgamedev.sln",
-			"configuration_name": "RelWithDebugInfo"
+			"configuration_name": "RelWithDebInfo"
 		},
 		"LSP":
 		{
