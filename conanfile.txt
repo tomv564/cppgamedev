@@ -8,6 +8,7 @@ spdlog/1.9.2
 # sdl2/2.0.10@bincrafters/stable
 gainput/1.0.0
 miniaudio/0.11.17
+freetype/2.13.0
 
 [generators]
 cmake_find_package

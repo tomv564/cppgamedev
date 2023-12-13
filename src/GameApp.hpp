@@ -24,6 +24,9 @@
 // #include <SwapChain.h>
 #include <vector>
 
+#include <freetype/freetype.h>
+
+#include "UIRenderer.h"
 
 using namespace Diligent;
 
@@ -33,110 +36,6 @@ using namespace Diligent;
 // class ISwapChain;
 // class IPipelineState;
 
-struct Point2D
-{
-    float x;
-    float y;
-};
-
-struct Color
-{
-    int r;
-    int g;
-    int b;
-    int a;
-};
-
-struct Rect2D
-{
-    Point2D topLeft;
-    Point2D bottomRight;  
-};
-
-
-struct Vertex
-{
-    float3 pos;
-    float4 color;
-    float2 uv;
-};
-
-struct Quad
-{
-    Rect2D rect;
-    Color color;
-    char ch;
-    std::string texture;
-};
-
-class Surface
-{
-
-public:
-    Rect2D rect;
-    Color backgroundColor;
-    std::string text;
-    std::string texture;
-
-    void getIndices(std::vector<Uint32>& indices, Uint32& offset) const;
-    void getVertices(std::vector<Vertex>& vertices) const;
-
-    bool getMesh(std::vector<Vertex>& vertices, std::vector<Uint32>& indices) const;
-
-    void createQuads();
-
-private:
-    std::vector<Quad> quads;
-
-};
-
-struct UIRenderBatch
-{
-    // RefCntAutoPtr<IPipelineState> m_pPSO;
-    // RefCntAutoPtr<IPipelineState> m_pPSO2;
-    // RefCntAutoPtr<IShaderResourceBinding> m_pSRB;
-    // RefCntAutoPtr<IShaderResourceBinding> m_pSRB2;
-
-
-    RefCntAutoPtr<IBuffer> vertexBuffer;
-    RefCntAutoPtr<IBuffer> indexBuffer;
-
-
-};
-
-class UIRenderer
-{
-
-public:
-    UIRenderer(RefCntAutoPtr<IRenderDevice>& renderDevice, RefCntAutoPtr<IDeviceContext>& deviceContext, RefCntAutoPtr<ISwapChain>& swapChain, RefCntAutoPtr<IEngineFactory>& engineFactory);
-    void Render(const Surface& surface);
-
-    void setTextureAtlas(RefCntAutoPtr<ITexture>& texture);
-    void setCharacterAtlas(RefCntAutoPtr<ITexture>& texture);
-
-private:
-    // per 
-    RefCntAutoPtr<IRenderDevice> m_pDevice;
-    RefCntAutoPtr<ISwapChain> m_pSwapChain;
-
-    RefCntAutoPtr<IEngineFactory> m_engineFactory;
-    RefCntAutoPtr<IDeviceContext> m_deviceContext;
-
-
-
-    // per batch/job  
-    RefCntAutoPtr<IPipelineState> m_pPSO;
-    RefCntAutoPtr<IPipelineState> m_pPSO2;
-    
-    RefCntAutoPtr<IShaderResourceBinding> m_pSRB;
-
-    RefCntAutoPtr<ITextureView> m_characterTextureSRV;
-    RefCntAutoPtr<ITextureView> m_textureSRV;
-
-    RefCntAutoPtr<IBuffer> m_vertexShaderConstants;
-    float4x4 m_worldViewProjectionMatrix;
-
-};
 
 class GameApp
 {
@@ -169,6 +68,7 @@ private:
     RefCntAutoPtr<ITextureView> m_characterTextureSRV;
     RefCntAutoPtr<ITextureView> m_textureSRV;
 
+    bool m_uiUpdateNeeded = false;
     std::vector<Surface> m_surfaces;
     std::vector<Vertex> m_vertices;
     std::vector<Uint32> m_indices;

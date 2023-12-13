@@ -16,5 +16,14 @@ struct PSOutput
 void main(in  PSInput  PSIn,
           out PSOutput PSOut)
 {
-    PSOut.Color = PSIn.Color * g_Texture.Sample(g_Texture_sampler, PSIn.UV);
-}
+    
+    // for font only 
+    float alpha = g_Texture.Sample(g_Texture_sampler, PSIn.UV).r;
+    clip(alpha > 0.2 ? 1.0 : -1.0);
+    PSOut.Color = PSIn.Color;
+            //PSIn.Color * alpha;
+    //PSOut.Color.a = alpha;
+    //PSOut.Color.rgb *= g_Texture.Sample(g_Texture_sampler, PSIn.UV).r;
+    //PSOut.Color.a = g_Texture.Sample(g_Texture_sampler, PSIn.UV).r;
+
+        }

@@ -4,9 +4,10 @@ find_package(spdlog)
 find_package(docopt)
 find_package(gainput)
 find_package(miniaudio REQUIRED)
+find_package(Freetype REQUIRED)
 
 # Generic test that uses conan libs
-add_executable(game WIN32 main.cpp GameApp.cpp)
+add_executable(game WIN32 main.cpp GameApp.cpp UIRenderer.cpp)
 
 # add_subdirectory(gainput)
 
@@ -15,6 +16,8 @@ add_subdirectory(DiligentEngine/DiligentTools)
 add_subdirectory(DiligentEngine/DiligentSamples)
 
 #target_include_directories(game PRIVATE "../DiligentEngine/DiligentCore")
+
+target_include_directories(game PRIVATE ${FREETYPE_INCLUDE_DIRS})
 target_link_libraries(
   game
   PRIVATE project_options
@@ -22,7 +25,8 @@ target_link_libraries(
           fmt::fmt
           spdlog::spdlog
           gainput::gainput
-          miniaudio::miniaudio)
+          miniaudio::miniaudio
+          ${FREETYPE_LIBRARIES})
 #docopt::docopt
           
 

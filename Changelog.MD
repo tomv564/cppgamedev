@@ -1,4 +1,17 @@
 
+
+### compile commmands
+
+
+ninja build?
+cmake -S . -GNinja -B ./ninjabuild
+
+CMake Error at C:/Users/Tom/.conan/data/freetype/2.13.0/_/_/build/a43c6e0e36517840f45af1fe54e76eac265bab11/build/Debug/generators/cmakedeps_macros.cmake:39 (message):
+  Library 'png16d' not found in package.  If 'png16d' is a system library,
+  declare it with 'cpp_info.system_libs' property
+
+  
+
 ### TODO
 
 
@@ -19,7 +32,13 @@ Input: https://gainput.johanneskuhlmann.de/
 
 DiligentEngine not checked out
 
+###
 
+Extracted UIRenderer
+Text rendering using freetype
+Using clip instead of blending for now
+Fixed color bug in toFloat4
+Fix order of rendering (apparently need to issue draw calls front to back??)
 
 ### Fix renderdoc / graphics tools
 
