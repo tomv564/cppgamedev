@@ -7,6 +7,8 @@
 
 #include <cstdint>
 #include <cstdlib>
+
+
 #include "GameApp.hpp"
 
 
@@ -36,6 +38,19 @@
 #include <numeric>
 #include <tuple>
 
+#define MINIAUDIO_IMPLEMENTATION
+#include <miniaudio.h>
+
+
+
+// Define your user buttons
+enum Button
+{
+  ButtonMenu,
+  ButtonConfirm,
+  MouseX,
+  MouseY
+};
 
 using namespace Diligent;
 
@@ -45,6 +60,41 @@ using namespace Diligent;
 // Diligent Engine can use HLSL source on all supported platforms.
 // It will convert HLSL to GLSL in OpenGL mode, while Vulkan backend will compile it directly to SPIRV.
 
+
+// static int MyCppFunction(lua_State* L) // Lua callable functions must be this format
+// {
+//     const int num = (int)lua_tonumber(L, 1); // get first param from stack
+//     const char* str = lua_tostring(L, 2); // get second param from stack
+//     std::cout << "Hello from C++!" << std::endl;
+//     std::cout << "num = " << num << ", str = " << str << std::endl;
+//     return 0; // how many params we're passing to Lua
+// }
+
+namespace ScriptApi
+{
+
+    static int StartSound(lua_State* L)
+    {
+        //const int num = (int)lua_tonumber(L, 1); // get first param from stack
+
+        const char* str = lua_tostring(L, 1); // get first param from stack
+        GameApp::GetInstance()->StartSound(str);
+        return 0;
+    }
+
+    static int CreateSurface(lua_State* L)
+    {
+        return 0;
+    }
+}
+
+
+GameApp::GameApp() 
+{
+    s_instance = this;
+}
+
+GameApp* GameApp::s_instance = nullptr;
 
 bool GameApp::InitializeDiligentEngine(HWND hWnd)
 {
@@ -103,6 +153,59 @@ void GameApp::InitializeUIRenderer()
     m_uiRenderer->initializeFonts();
 }
 
+void GameApp::SetupInput(gainput::InputManager& inputManager)
+{
+    // TODO: move to lua??
+
+    gainput::DeviceId mouseId = inputManager.CreateDevice<gainput::InputDeviceMouse>();
+    gainput::DeviceId keyboardId = inputManager.CreateDevice<gainput::InputDeviceKeyboard>();
+    gainput::DeviceId padId = inputManager.CreateDevice<gainput::InputDevicePad>();
+
+    m_inputMap = std::make_unique<gainput::InputMap>(inputManager);
+    m_inputMap->MapBool(ButtonMenu, keyboardId, gainput::KeyEscape);
+    m_inputMap->MapBool(ButtonConfirm, mouseId, gainput::MouseButtonLeft);
+    m_inputMap->MapFloat(MouseX, mouseId, gainput::MouseAxisX);
+    m_inputMap->MapFloat(MouseY, mouseId, gainput::MouseAxisY);
+    m_inputMap->MapBool(ButtonConfirm, padId, gainput::PadButtonA);
+}
+
+
+void GameApp::SetupAudio()
+{
+    ma_result result = ma_engine_init(NULL, &m_audioEngine);
+    if (result != MA_SUCCESS) {
+        printf("Failed to initialize audio engine.");
+    }
+}
+
+void GameApp::Shutdown()
+{
+    ma_engine_uninit(&m_audioEngine);
+}
+
+
+void GameApp::SetupScripting()
+{
+
+    // set up Lua
+
+    m_luaState = luaL_newstate(); // create a new lua instance
+
+    luaL_openlibs(m_luaState); // give lua access to basic libraries
+    // lua_register(L, "CallMyCppFunction", MyCppFunction); // register our C++ function with Lua
+    lua_register(m_luaState, "CreateSurface", ScriptApi::CreateSurface); // register our C++ function with Lua
+    lua_register(m_luaState, "PlaySound", ScriptApi::StartSound);
+    luaL_dofile(m_luaState, "main.lua"); // loads the Lua script
+
+    // *** call Lua function from C++ ***
+    lua_getglobal(m_luaState, "init"); // find the Lua function
+    //lua_pushnumber(L, 73); // push number as first param
+    //lua_pushstring(L, "From C++ to Lua"); // push string as second param
+    lua_pcall(m_luaState, 0, 0, 0); // call the function passing 2 params
+
+}
+
+
 void GameApp::BuildUI()
 {
     // title
@@ -126,6 +229,35 @@ void GameApp::BuildUI()
 
 void GameApp::Update()
 {
+    // input
+    if (m_inputMap->GetBoolWasDown(ButtonConfirm))
+    {
+    //  spdlog::info("Confirmed!!");
+      ma_engine_play_sound(&m_audioEngine, "mixkit-select-click-1109.wav", NULL);
+    }
+
+
+    // *** call Lua function from C++ ***
+    lua_getglobal(m_luaState, "update"); // find the Lua function
+    //lua_pushnumber(L, 73); // push number as first param
+    //lua_pushstring(L, "From C++ to Lua"); // push string as second param
+    lua_pcall(m_luaState, 0, 0, 0); // call the function passing 2 params
+
+    // if (map.GetBoolWasDown(ButtonConfirm))
+    // {
+    //   spdlog::info("Confirmed!!");
+    //   ma_engine_play_sound(&engine, "mixkit-select-click-1109.wav", NULL);
+    // }
+
+    //if (map.GetBoolWasDown(ButtonMenu)) {
+    //  spdlog::info("Open menu!!");
+    //}
+
+    //if (map.GetFloatDelta(MouseX) != 0.0f || map.GetFloatDelta(MouseY) != 0.0f)
+    //{
+    //  spdlog::info("Mouse: %f, %f\n", map.GetFloat(MouseX), map.GetFloat(MouseY));
+    //}
+
     if (m_uiUpdateNeeded)
     {
         for (Surface& surf : m_surfaces)
@@ -138,6 +270,11 @@ void GameApp::Update()
     }
 }
 
+
+void GameApp::StartSound(const char* assetPath)
+{
+    ma_engine_play_sound(&m_audioEngine, assetPath, NULL);
+}
 
 void GameApp::LoadTextures()
 {

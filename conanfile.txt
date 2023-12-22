@@ -9,6 +9,7 @@ spdlog/1.9.2
 gainput/1.0.0
 miniaudio/0.11.17
 freetype/2.13.0
+lua/5.4.6
 
 [generators]
 cmake_find_package

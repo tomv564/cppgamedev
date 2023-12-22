@@ -24,9 +24,18 @@
 // #include <SwapChain.h>
 #include <vector>
 
+#include <gainput/gainput.h>
+#include <miniaudio.h>
 #include <freetype/freetype.h>
 
 #include "UIRenderer.h"
+
+// include Lua headers
+extern "C" {
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+}
 
 using namespace Diligent;
 
@@ -40,18 +49,34 @@ using namespace Diligent;
 class GameApp
 {
 public:
+    GameApp();
     bool InitializeDiligentEngine(HWND hWnd);
     void InitializeUIRenderer();
+    void SetupAudio();
+    void SetupInput(gainput::InputManager& InputManager);
+    void SetupScripting();
     void BuildUI();
     void LoadTextures();
+    void StartSound(const char* assetPath);
     void Update();
     void Render();
     void Present();
+    void Shutdown();
+
+    static GameApp* GetInstance() { return s_instance; }
+
   
 private:
+    static GameApp* s_instance;
+
     RefCntAutoPtr<IRenderDevice> m_pDevice;
     RefCntAutoPtr<IEngineFactory> m_engineFactory;
 
+    std::unique_ptr<gainput::InputMap> m_inputMap;
+
+    ma_engine m_audioEngine;
+
+    lua_State* m_luaState;
 
     std::unique_ptr<UIRenderer> m_uiRenderer;
 

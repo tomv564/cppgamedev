@@ -1,4 +1,12 @@
 
+### commands
+
+Configure
+
+cmake -S . -B ./build
+
+
+
 
 ### compile commmands
 
@@ -24,6 +32,39 @@ Layouting
 
 
 Make a button:
+
+
+Add Sol
+Expose Input state
+Hook up CreateSurface / UpdateSurface ?
+
+
+### Done
+
+
+
+### Dec 22
+
+
+Moved input, audio to GameApp
+Added lua
+Easy to add but FindLua registered names as lua_INCLUDE_DIRS instead of LUA_INCLUDE_DIRS 
+And Cmake loves to ignore this ??
+
+
+### Dec ???
+
+
+
+Extracted UIRenderer
+Text rendering using freetype
+Using clip instead of blending for now
+Fixed color bug in toFloat4
+Fix order of rendering (apparently need to issue draw calls front to back??)
+
+
+### Earlier
+
 Input: https://gainput.johanneskuhlmann.de/
 
 
@@ -31,14 +72,6 @@ Input: https://gainput.johanneskuhlmann.de/
 ### Fix CI
 
 DiligentEngine not checked out
-
-###
-
-Extracted UIRenderer
-Text rendering using freetype
-Using clip instead of blending for now
-Fixed color bug in toFloat4
-Fix order of rendering (apparently need to issue draw calls front to back??)
 
 ### Fix renderdoc / graphics tools
 
