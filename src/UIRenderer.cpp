@@ -295,7 +295,7 @@ UIRenderer::UIRenderer(RefCntAutoPtr<IRenderDevice>& renderDevice, RefCntAutoPtr
     // Finally, create the pipeline state
     m_pDevice->CreateGraphicsPipelineState(PSOCreateInfo, &m_pPSO);
 
-    m_worldViewProjectionMatrix = float4x4::OrthoOffCenter(0.0, 1920.0, 1080.0, 0.0, 1.0, -1.0, false);
+    m_worldViewProjectionMatrix = float4x4::OrthoOffCenter(0.0, 800.0, 600.0, 0.0, 1.0, -1.0, false);
 
     // Since we did not explcitly specify the type for 'Constants' variable, default
     // type (SHADER_RESOURCE_VARIABLE_TYPE_STATIC) will be used. Static variables never

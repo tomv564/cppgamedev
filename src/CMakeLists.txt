@@ -6,6 +6,7 @@ find_package(gainput)
 find_package(miniaudio REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(lua REQUIRED)
+find_package(sol2 REQUIRED)
 
 # Generic test that uses conan libs
 add_executable(game WIN32 main.cpp GameApp.cpp UIRenderer.cpp)
@@ -18,6 +19,7 @@ add_subdirectory(DiligentEngine/DiligentSamples)
 
 target_include_directories(game PRIVATE ${FREETYPE_INCLUDE_DIRS})
 target_include_directories(game PRIVATE ${lua_INCLUDE_DIR})
+target_include_directories(game PRIVATE ${sol2_INCLUDE_DIR})
 
 target_link_libraries(
   game

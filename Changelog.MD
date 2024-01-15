@@ -30,8 +30,10 @@ Make a dialog
 Layouting
 
 
+spdlog to debug output
+console output??
 
-Make a button:
+Make a button
 
 
 Add Sol

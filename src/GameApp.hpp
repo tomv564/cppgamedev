@@ -37,6 +37,8 @@ extern "C" {
 #include <lauxlib.h>
 }
 
+#include <sol/sol.hpp>
+
 using namespace Diligent;
 
 
@@ -56,6 +58,8 @@ public:
     void SetupInput(gainput::InputManager& InputManager);
     void SetupScripting();
     void BuildUI();
+    void AddSurface(Surface& surface);
+    void ClearSurfaces();
     void LoadTextures();
     void StartSound(const char* assetPath);
     void Update();
@@ -76,7 +80,8 @@ private:
 
     ma_engine m_audioEngine;
 
-    lua_State* m_luaState;
+    //lua_State* m_luaState;
+    std::unique_ptr<sol::state> m_luaState;
 
     std::unique_ptr<UIRenderer> m_uiRenderer;
 

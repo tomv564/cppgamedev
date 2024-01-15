@@ -8,9 +8,9 @@
 #include <cstdint>
 #include <cstdlib>
 
+#include <spdlog/spdlog.h>
 
 #include "GameApp.hpp"
-
 
 // TODO ensure include path is known to clangd
 
@@ -42,6 +42,7 @@
 #include <miniaudio.h>
 
 
+#pragma optimize("", off)
 
 // Define your user buttons
 enum Button
@@ -50,6 +51,14 @@ enum Button
   ButtonConfirm,
   MouseX,
   MouseY
+};
+
+struct InputState
+{
+    bool ButtonMenuDown = false;
+    bool ButtonConfirmDown = false;
+    float MouseX;
+    float MouseY;
 };
 
 using namespace Diligent;
@@ -82,10 +91,39 @@ namespace ScriptApi
         return 0;
     }
 
-    static int CreateSurface(lua_State* L)
+    static int CreateSurface(sol::table args)
     {
+        Surface surface;
+        sol::table rect = args["rect"];
+        if (!rect.empty())
+            surface.rect = { {rect[1][1], rect[1][2]}, {rect[2][1], rect[2][2]} };
+        surface.text = args["text"];
+        sol::table color = args["color"];
+        if (!color.empty())
+            surface.color = { color[1], color[2], color[3], color[4] };
+        sol::table bgColor = args["backgroundColor"];
+        if (!bgColor.empty())
+            surface.backgroundColor = { bgColor[1], bgColor[2], bgColor[3], bgColor[4] };
+
+        GameApp::GetInstance()->AddSurface(surface);
+
         return 0;
     }
+
+    static int UpdateSurfaces(sol::table args)
+    {
+        GameApp::GetInstance()->ClearSurfaces();
+        for (const auto& pair : args)
+        {
+            CreateSurface(pair.second.as<sol::table>());
+        }
+
+        return 0;
+     /*   args.for_each([&](sol::object& val) {
+            CreateSurface(val.as<sol::table>());
+        })*/;
+    }
+
 }
 
 
@@ -188,23 +226,30 @@ void GameApp::SetupScripting()
 {
 
     // set up Lua
-
-    m_luaState = luaL_newstate(); // create a new lua instance
-
-    luaL_openlibs(m_luaState); // give lua access to basic libraries
-    // lua_register(L, "CallMyCppFunction", MyCppFunction); // register our C++ function with Lua
-    lua_register(m_luaState, "CreateSurface", ScriptApi::CreateSurface); // register our C++ function with Lua
-    lua_register(m_luaState, "PlaySound", ScriptApi::StartSound);
-    luaL_dofile(m_luaState, "main.lua"); // loads the Lua script
-
-    // *** call Lua function from C++ ***
-    lua_getglobal(m_luaState, "init"); // find the Lua function
-    //lua_pushnumber(L, 73); // push number as first param
-    //lua_pushstring(L, "From C++ to Lua"); // push string as second param
-    lua_pcall(m_luaState, 0, 0, 0); // call the function passing 2 params
+    m_luaState = std::make_unique<sol::state>();
+    m_luaState->open_libraries(sol::lib::base);
+    m_luaState->open_libraries(sol::lib::table);
+    
+    // register our C++ function with Lua
+    m_luaState->set_function("CreateSurface", &ScriptApi::CreateSurface); 
+    m_luaState->set_function("UpdateSurfaces", &ScriptApi::UpdateSurfaces);
+    m_luaState->set_function("PlaySound", ScriptApi::StartSound);
+    
+    m_luaState->script_file("main.lua");
+    (*m_luaState)["init"]();
 
 }
+void GameApp::ClearSurfaces()
+{
+    m_surfaces.clear();
+    m_uiUpdateNeeded = true;
+}
 
+void GameApp::AddSurface(Surface& surface)
+{
+    m_surfaces.push_back(surface);
+    m_uiUpdateNeeded = true;
+}
 
 void GameApp::BuildUI()
 {
@@ -233,15 +278,30 @@ void GameApp::Update()
     if (m_inputMap->GetBoolWasDown(ButtonConfirm))
     {
     //  spdlog::info("Confirmed!!");
-      ma_engine_play_sound(&m_audioEngine, "mixkit-select-click-1109.wav", NULL);
+      //ma_engine_play_sound(&m_audioEngine, "mixkit-select-click-1109.wav", NULL);
+        
+        InputState state{ false, false, m_inputMap->GetFloat(MouseX)*800.f, m_inputMap->GetFloat(MouseY)*600.f };
+        if (state.MouseX > 0.0f)
+            spdlog::info("yay!");
+            
     }
 
+    //InputState inputState{ m_inputMap->GetBoolWasDown(ButtonMenu), m_inputMap->GetBoolWasDown(ButtonConfirm) };
+    (*m_luaState)["inputState"] = m_luaState->create_table_with(
+        "ButtonConfirmDown", m_inputMap->GetBoolWasDown(ButtonConfirm),
+        "ButtonMenuDown", m_inputMap->GetBoolWasDown(ButtonMenu),
+        "MouseX", m_inputMap->GetFloat(MouseX)*800.f,
+        "MouseY", m_inputMap->GetFloat(MouseY)*600.f
+    );
 
     // *** call Lua function from C++ ***
-    lua_getglobal(m_luaState, "update"); // find the Lua function
+    //lua_getglobal(m_luaState, "update"); // find the Lua function
     //lua_pushnumber(L, 73); // push number as first param
     //lua_pushstring(L, "From C++ to Lua"); // push string as second param
-    lua_pcall(m_luaState, 0, 0, 0); // call the function passing 2 params
+    //lua_pcall(m_luaState, 0, 0, 0); // call the function passing 2 params
+
+    (*m_luaState)["update"]();
+
 
     // if (map.GetBoolWasDown(ButtonConfirm))
     // {

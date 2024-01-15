@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/msvc_sink.h>
 #include <filesystem>
 
 #ifndef UNICODE
@@ -18,6 +19,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int cmdShow)
 {
+
+    auto msvc_sink = std::make_shared<spdlog::sinks::msvc_sink_st>();
+
   g_pTheApp = std::make_unique<GameApp>();
 
 
@@ -80,7 +84,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int c
   // Set up UI
   g_pTheApp->InitializeUIRenderer();  
   g_pTheApp->LoadTextures();
-  g_pTheApp->BuildUI();
+ // g_pTheApp->BuildUI();
   
   ShowWindow(hwnd, SW_SHOWDEFAULT);
 
