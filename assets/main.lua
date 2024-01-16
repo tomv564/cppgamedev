@@ -25,20 +25,20 @@ end
 
 function createStartScreen()
     local s = {
-        rect = {{0, 0}, {300, 200}},
+        rect = {{0, 0}, {800, 600}},
         backgroundColor = { 255, 255, 204, 255},
-        color = { 0, 255, 0, 255 },
-        text = "HELLO WORLD"
+        color = { 0, 255, 0, 255 }
     }
 
     local b = {
-        rect = {{400, 300}, {700, 400}},
-        backgroundColor = { 255, 0, 0, 255},
+        rect = {{200, 250}, {600, 300}},
+        backgroundColor = { 200, 200, 175, 255},
+        color = { 0, 0, 0, 255},
         text = "Click to start"
     }
     addClickHandler(b.rect, onStartClicked)
 
-    surfs = {s,b}
+    surfs = {b, s}
     UpdateSurfaces(surfs)
 end
 

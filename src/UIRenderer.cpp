@@ -378,6 +378,8 @@ void UIRenderer::Prepare(Surface& surface)
         float left = surface.rect.topLeft.x;
         float top = surface.rect.topLeft.y;
 
+        float glyphBottom = top + 43.0;
+
         for (const auto ch : surface.text) 
         {
             const Glyph* glyph = m_glyphCache->getOrAddGlyph(ch, m_face);
@@ -389,9 +391,13 @@ void UIRenderer::Prepare(Surface& surface)
                 uv.topLeft.y = (float)glyph->top; 
                 uv.bottomRight.x = (float)(glyph->width+glyph->left) / GLYPHCACHE_SIZE;
                 uv.bottomRight.y = (float)glyph->height / GLYPHCACHE_SIZE;
-                 surface.quads.push_back({ { { left, top }, { left + glyph->width, top + glyph->height } }, surface.color, uv });
+                
+                
+                // ensure glyphs are bottom aligned (or via baseline?)
+                
+                surface.quads.push_back({ { { left, glyphBottom - glyph->height }, { left + glyph->width, glyphBottom } }, surface.color, uv });
                  
-                 left += glyph->advance_x >> 6;
+                left += glyph->advance_x >> 6;
             }
             else
                 std::cout << "Failed to get glyph: '" << ch << "'" << std::endl;
